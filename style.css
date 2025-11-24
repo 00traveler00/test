@@ -1,0 +1,577 @@
+body,
+html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #202030;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    touch-action: none;
+    color: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    display: block;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    width: 100%;
+    height: 100%;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ui-screen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.7);
+    pointer-events: auto;
+    transition: opacity 0.3s;
+    padding: 2vh 2vw;
+    box-sizing: border-box;
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+    display: none;
+}
+
+/* Typography & Buttons */
+h1,
+h2 {
+    text-align: center;
+    text-shadow: 0 0 10px #ff00ff;
+    margin-bottom: 3vh;
+}
+
+.title-text {
+    font-size: min(12vw, 4rem);
+    color: #00ffff;
+    line-height: 1.2;
+    transform: rotate(-5deg);
+}
+
+.cyber-btn {
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    border: none;
+    padding: min(2vh, 15px) min(6vw, 40px);
+    margin: 1vh 1vw;
+    font-size: min(5vw, 1.5rem);
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 30px;
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+    transition: transform 0.1s;
+    white-space: nowrap;
+}
+
+.cyber-btn:active {
+    transform: scale(0.95);
+}
+
+.cyber-btn.secondary {
+    background: #444;
+    box-shadow: none;
+    border: 2px solid #666;
+}
+
+.cyber-btn.small {
+    font-size: min(4vw, 1rem);
+    padding: min(1vh, 8px) min(4vw, 20px);
+}
+
+/* Home Screen */
+.character-select {
+    display: flex;
+    gap: 2vw;
+    margin-bottom: 2vh;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.char-card {
+    width: min(22vw, 100px);
+    height: min(33vw, 150px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.char-card canvas {
+    width: 80% !important;
+    height: auto !important;
+    box-shadow: none;
+}
+
+.char-card span {
+    font-size: min(3.5vw, 14px);
+    margin-top: 1vh;
+}
+
+.char-card.selected {
+    background: rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 15px #00ffff;
+}
+
+/* Stats Panel */
+.stats-panel {
+    margin-top: 2vh;
+}
+
+.stats-panel p {
+    font-size: min(4vw, 1.2rem);
+    margin: 1vh 0;
+}
+
+.upgrades {
+    display: flex;
+    gap: 2vw;
+    margin-top: 1vh;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* HUD */
+#hud-screen {
+    background: transparent;
+    justify-content: flex-start;
+    pointer-events: none;
+}
+
+.hud-top {
+    width: 100%;
+    padding: 2vh 2vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    box-sizing: border-box;
+}
+
+.hud-left,
+.hud-right {
+    flex: 1;
+    display: flex;
+}
+
+.hud-right {
+    justify-content: flex-end;
+}
+
+.hud-center {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.bar-container {
+    width: min(40vw, 200px);
+    height: min(3vh, 25px);
+    background: #333;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.bar-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    font-size: min(3vw, 12px);
+    text-shadow: 1px 1px 1px #000;
+}
+
+.bar.hp {
+    width: 100%;
+    height: 100%;
+    background: #00ff00;
+    transition: width 0.2s;
+}
+
+.score-container {
+    font-size: min(5vw, 1.5rem);
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+}
+
+.time-container {
+    font-size: min(4vw, 1.2rem);
+    color: #fff;
+    margin-top: 0.5vh;
+}
+
+.difficulty-text {
+    color: #ff00ff;
+    margin-left: 1vw;
+}
+
+/* Shop */
+.shop-container {
+    display: flex;
+    gap: 2vw;
+    margin-bottom: 2vh;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.relic-card {
+    width: min(28vw, 150px);
+    height: min(40vw, 220px);
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ffff;
+    border-radius: 15px;
+    padding: 1vh 1vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.relic-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.relic-card h3 {
+    font-size: min(4vw, 1.2rem);
+    color: #ff00ff;
+    margin: 0.5vh 0;
+    text-align: center;
+}
+
+.relic-card p {
+    font-size: min(3.5vw, 0.9rem);
+    text-align: center;
+    margin: 0.5vh 0;
+}
+
+.relic-card .relic-icon {
+    width: 60% !important;
+    height: auto !important;
+    box-shadow: none;
+}
+
+.relic-cost {
+    color: #ffff00;
+    font-weight: bold;
+}
+
+/* Minimap */
+.minimap {
+    position: absolute;
+    top: 1vh;
+    right: 1vw;
+    width: 20vw;
+    height: 20vw;
+    max-width: 150px;
+    max-height: 150px;
+    border: 2px solid #00ffff;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+/* Acquired Items */
+.acquired-items {
+    position: absolute;
+    top: min(23vh, 150px);
+    left: 2vw;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1vw;
+    max-width: 40vw;
+    pointer-events: none;
+}
+
+.acquired-item-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.acquired-item-icon {
+    width: min(6vw, 40px) !important;
+    height: min(6vw, 40px) !important;
+    display: block;
+}
+
+.acquired-count-badge {
+    position: absolute;
+    bottom: -0.5vh;
+    right: -0.5vw;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: min(3vw, 10px);
+    padding: 0.2vh 0.5vw;
+    border-radius: 4px;
+    border: 1px solid #fff;
+    min-width: 12px;
+    text-align: center;
+}
+
+/* Options Checkbox */
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2vh;
+    margin-bottom: 3vh;
+}
+
+.cyber-checkbox {
+    display: block;
+    position: relative;
+    padding-left: min(8vw, 35px);
+    margin-bottom: 1.5vh;
+    cursor: pointer;
+    font-size: min(5vw, 22px);
+    user-select: none;
+    color: #00ffff;
+}
+
+.cyber-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: min(6vw, 25px);
+    width: min(6vw, 25px);
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid #00ffff;
+}
+
+.cyber-checkbox:hover input~.checkmark {
+    background-color: rgba(0, 255, 255, 0.2);
+}
+
+.cyber-checkbox input:checked~.checkmark {
+    background-color: #00ffff;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.cyber-checkbox input:checked~.checkmark:after {
+    display: block;
+}
+
+.cyber-checkbox .checkmark:after {
+    left: 35%;
+    top: 20%;
+    width: 20%;
+    height: 40%;
+    border: solid #000;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
+}
+
+/* Result Screen Stats */
+.result-stats {
+    font-size: min(5vw, 1.5rem);
+    margin: 2vh 0;
+}
+
+.result-stats p {
+    margin: 1vh 0;
+}
+
+.result-stats-container {
+    width: 90%;
+    max-width: 600px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ffff;
+    border-radius: 10px;
+    padding: 2vh 2vw;
+    margin-bottom: 2vh;
+}
+
+.result-section {
+    margin-bottom: 2vh;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+    padding-bottom: 1vh;
+}
+
+.result-section h3 {
+    color: #00ffff;
+    margin-bottom: 1vh;
+    text-align: left;
+    font-size: min(5vw, 1.2rem);
+}
+
+.result-big-text {
+    font-size: min(7vw, 2rem);
+    color: #ffff00;
+    text-align: center;
+    margin: 1vh 0;
+}
+
+.result-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5vw;
+}
+
+.result-item-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: 0.5vh 0.5vw;
+}
+
+.result-item-icon {
+    width: min(8vw, 40px) !important;
+    height: min(8vw, 40px) !important;
+    display: block;
+}
+
+.result-count-badge {
+    position: absolute;
+    bottom: -0.5vh;
+    right: -0.5vw;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: min(3vw, 10px);
+    padding: 0.3vh 0.6vw;
+    border-radius: 4px;
+    border: 1px solid #fff;
+    min-width: 12px;
+    text-align: center;
+}
+
+.result-actions {
+    display: flex;
+    gap: 2vw;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    .title-text {
+        font-size: min(15vw, 3rem);
+    }
+
+    .cyber-btn {
+        padding: 1.5vh 6vw;
+        font-size: min(6vw, 1.2rem);
+    }
+
+    .hud-top {
+        padding: 1vh 1vw;
+        flex-wrap: wrap;
+    }
+
+    .hud-left {
+        order: 1;
+        width: 50%;
+    }
+
+    .hud-right {
+        order: 2;
+        width: 50%;
+        justify-content: flex-end;
+    }
+
+    .hud-center {
+        order: 3;
+        width: 100%;
+        margin-top: 1vh;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        gap: 3vw;
+    }
+
+    .bar-container {
+        width: 100%;
+        max-width: 30vw;
+    }
+
+    .minimap {
+        width: 18vw;
+        height: 18vw;
+        max-width: 80px;
+        max-height: 80px;
+        top: 0.5vh;
+        right: 0.5vw;
+        border-width: 1px;
+    }
+
+    .acquired-items {
+        top: min(18vh, 120px);
+        left: 1vw;
+        max-width: 90vw;
+    }
+
+    .acquired-item-icon {
+        width: min(8vw, 35px) !important;
+        height: min(8vw, 35px) !important;
+    }
+
+    .relic-card {
+        width: 40vw;
+        height: 55vw;
+    }
+
+    .char-card {
+        width: min(40vw, 120px);
+        height: min(50vw, 180px);
+    }
+}
+
+@media (max-width: 400px) {
+    .hud-center {
+        font-size: min(4vw, 0.9rem);
+    }
+
+    .bar-container {
+        height: min(4vh, 20px);
+    }
+}
