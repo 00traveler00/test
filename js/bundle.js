@@ -3610,7 +3610,7 @@ class UIManager {
             { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 12, color: '#00ffff', effect: (p) => { /* Handled in Drop */ } },
             { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 40, color: '#00ffaa', effect: (p) => p.game.addDrone() },
             { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 50, color: '#ff0088', effect: (p) => p.missileCount++ },
-            { id: 'full_heal', name: 'Emergency Repair', desc: 'Fully Restores HP', cost: 300, color: '#ff00ff', effect: (p) => p.hp = p.maxHp }
+            { id: 'full_heal', name: 'Emergency Repair', desc: 'Fully Restores HP', cost: 100, color: '#ff00ff', effect: (p) => p.hp = p.maxHp }
         ];
 
         this.setupScreens();
