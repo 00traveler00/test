@@ -2,8 +2,8 @@ import { EnemyProjectile } from './EnemyProjectile.js';
 import { Particle } from './Particle.js';
 
 export class EnemyMissile extends EnemyProjectile {
-    constructor(game, x, y, target) {
-        super(game, x, y, target);
+    constructor(game, x, y, target, damage = 15) {
+        super(game, x, y, target, 'missile', damage);
         this.target = target;
         this.speed = 250;
         this.turnSpeed = 2.5;

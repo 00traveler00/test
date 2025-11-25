@@ -616,14 +616,14 @@ class Drone {
 
 // --- js/game/entities/EnemyProjectile.js ---
 class EnemyProjectile {
-    constructor(game, x, y, target, type = 'normal') {
+    constructor(game, x, y, target, type = 'normal', damage = 10) {
         this.game = game;
         this.x = x;
         this.y = y;
         this.type = type; // normal, fireball, void, slime, plasma
         this.speed = 200;
         this.radius = 6;
-        this.damage = 10;
+        this.damage = damage;
         this.markedForDeletion = false;
         this.color = '#ff4400';
         this.timer = 0; // For animation
@@ -746,8 +746,8 @@ class EnemyProjectile {
 
 
 class EnemyMissile extends EnemyProjectile {
-    constructor(game, x, y, target) {
-        super(game, x, y, target);
+    constructor(game, x, y, target, damage = 15) {
+        super(game, x, y, target, 'missile', damage);
         this.target = target;
         this.speed = 250;
         this.turnSpeed = 2.5;
@@ -1223,7 +1223,7 @@ class Lizard extends Enemy {
 
     shoot() {
         this.game.enemyProjectiles.push(
-            new EnemyProjectile(this.game, this.x, this.y, this.game.player)
+            new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'normal', this.damage)
         );
     }
 
@@ -1323,7 +1323,7 @@ class Totem extends Enemy {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < 150) { // Blast radius
-            this.game.player.hp -= 0.5; // Rapid damage
+            this.game.player.hp -= this.damage * 2.0 * 0.016; // Rapid damage (scaled)
             if (this.game.player.hp <= 0) this.game.setState('result');
         }
     }
@@ -1473,7 +1473,7 @@ class MissileEnemy extends Enemy {
 
     shoot() {
         this.game.enemyProjectiles.push(
-            new EnemyMissile(this.game, this.x, this.y, this.game.player)
+            new EnemyMissile(this.game, this.x, this.y, this.game.player, this.damage)
         );
     }
 
@@ -1554,7 +1554,7 @@ class BeamEnemy extends Enemy {
             while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
 
             if (Math.abs(angleDiff) < 0.15) { // Narrow beam
-                p.hp -= 0.5; // Rapid damage
+                p.hp -= this.damage * 2.0 * 0.016; // Rapid damage (scaled)
                 if (p.hp <= 0) this.game.setState('result');
             }
         }
@@ -1926,7 +1926,7 @@ class Overlord extends BaseBoss {
                 const angle = (Math.PI * 2 / projectiles) * i + offset;
                 const tx = this.x + Math.cos(angle) * 100;
                 const ty = this.y + Math.sin(angle) * 100;
-                const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma');
+                const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma', this.damage);
                 p.speed = 250;
                 p.color = '#ff00ff'; // Override color for Overlord plasma
                 this.game.enemyProjectiles.push(p);
@@ -1966,9 +1966,10 @@ class Overlord extends BaseBoss {
             while (angleDiff <= -Math.PI) angleDiff += Math.PI * 2;
             while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
             if (Math.abs(angleDiff) < 0.2) {
-                p.hp -= 1.0;
+                const dmg = this.damage * 2.0 * 0.016; // Rapid damage
+                p.hp -= dmg;
                 if (p.hp <= 0) this.game.setState('result');
-                this.game.showDamage(p.x, p.y, 1, '#00ffff');
+                this.game.showDamage(p.x, p.y, Math.ceil(dmg), '#00ffff');
             }
         }
     }
@@ -2108,8 +2109,8 @@ class SlimeKing extends BaseBoss {
             this.y = this.jumpTarget.y;
             const dist = Math.hypot(this.game.player.x - this.x, this.game.player.y - this.y);
             if (dist < 150) {
-                this.game.player.hp -= 20;
-                this.game.showDamage(this.game.player.x, this.game.player.y, 20, '#00ff88');
+                this.game.player.hp -= this.damage;
+                this.game.showDamage(this.game.player.x, this.game.player.y, Math.round(this.damage), '#00ff88');
             }
             // Impact Particles
             for (let i = 0; i < 30; i++) {
@@ -2127,7 +2128,7 @@ class SlimeKing extends BaseBoss {
         this.stateDuration = 1.0;
         for (let i = 0; i < 3; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: this.x + Math.cos(angle) * 100, y: this.y + Math.sin(angle) * 100 }, 'slime');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: this.x + Math.cos(angle) * 100, y: this.y + Math.sin(angle) * 100 }, 'slime', this.damage);
             p.radius = 10;
             this.game.enemyProjectiles.push(p);
         }
@@ -2246,9 +2247,9 @@ class MechaGolem extends BaseBoss {
             const angle = Math.atan2(this.game.player.y - this.y, this.game.player.x - this.x) + i * 0.3;
             const tx = this.x + Math.cos(angle) * 100;
             const ty = this.y + Math.sin(angle) * 100;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma', this.damage * 1.5);
             p.radius = 20;
-            p.damage = 40;
+            // p.damage = 40; // Removed hardcode
             p.color = '#ff0000';
             this.game.enemyProjectiles.push(p);
         }
@@ -2390,7 +2391,7 @@ class VoidPhantom extends BaseBoss {
             const angle = (Math.PI * 2 / projectiles) * i;
             const tx = this.x + Math.cos(angle) * 100;
             const ty = this.y + Math.sin(angle) * 100;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'void');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'void', this.damage);
             this.game.enemyProjectiles.push(p);
         }
     }
@@ -2509,7 +2510,7 @@ class CrimsonDragon extends BaseBoss {
             const angle = angleToPlayer + spread;
             const tx = this.x + Math.cos(angle) * 100;
             const ty = this.y + Math.sin(angle) * 100;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'fireball');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'fireball', this.damage);
             p.radius = 12;
             this.game.enemyProjectiles.push(p);
         }
@@ -2518,7 +2519,7 @@ class CrimsonDragon extends BaseBoss {
     startMeteor() {
         this.state = 'meteor';
         this.stateDuration = 1.0;
-        const p = new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'fireball');
+        const p = new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'fireball', this.damage * 2.0);
         p.speed = 400;
         p.radius = 30;
         this.game.enemyProjectiles.push(p);
@@ -3131,13 +3132,13 @@ class UpgradeSystem {
 
 
 class WaveManager {
-    constructor(game, initialDifficulty = 1.0) {
+    constructor(game, initialDifficulty = 1.0, initialTime = 0) {
         this.game = game;
         this.enemies = [];
         this.spawnTimer = 0;
         this.spawnInterval = 1.5;
 
-        this.time = 0; // Total run time in seconds
+        this.time = initialTime; // Total run time in seconds
         this.initialDifficulty = initialDifficulty;
         this.difficulty = initialDifficulty; // Difficulty coefficient
 
@@ -3296,9 +3297,16 @@ class WaveManager {
             }
 
             // Apply Difficulty Scaling
+            // Time-based scaling
             enemyType.hp *= this.difficulty;
             enemyType.maxHp *= this.difficulty;
             enemyType.damage *= this.difficulty;
+
+            // Map Level Scaling (Stage 2 is harder than Stage 1)
+            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.5; // +50% per stage
+            enemyType.hp *= stageMultiplier;
+            enemyType.maxHp *= stageMultiplier;
+            enemyType.damage *= stageMultiplier;
 
             this.enemies.push(enemyType);
         }
@@ -4149,7 +4157,12 @@ class Game {
         // Map 1: 1.0, Map 2: 1.5, Map 3: 2.0, Loop: +0.5 per loop
         const baseDifficulty = 1.0 + (this.mapLevel - 1) * 0.5;
 
-        this.waveManager = new WaveManager(this, baseDifficulty);
+        let initialTime = 0;
+        if (preserveStats && this.waveManager) {
+            initialTime = this.waveManager.time;
+        }
+
+        this.waveManager = new WaveManager(this, baseDifficulty, initialTime);
         this.player = new Player(this, this.worldWidth / 2, this.worldHeight / 2);
         this.drones = []; // Initialize before applying upgrades (which might add drones)
 
@@ -4266,7 +4279,7 @@ class Game {
 
             this.drones.forEach(d => d.update(dt));
 
-            this.checkCollisions();
+            this.checkCollisions(dt);
 
             // Global Death Check (catches non-collision damage like self-destructs)
             if (this.player && this.player.hp <= 0) {
@@ -4276,13 +4289,18 @@ class Game {
             // Update HUD
             if (this.player && this.waveManager) {
                 const hpPercent = (this.player.hp / this.player.maxHp) * 100;
+
+                // Calculate effective difficulty for display
+                const mapMultiplier = 1 + (this.mapLevel - 1) * 0.5;
+                const effectiveDifficulty = this.waveManager.difficulty * mapMultiplier;
+
                 this.ui.updateHUD(
                     hpPercent,
                     this.ene,
                     this.player.hp,
                     this.player.maxHp,
                     this.waveManager.time,
-                    this.waveManager.difficulty
+                    effectiveDifficulty
                 );
             }
         }
@@ -4298,7 +4316,7 @@ class Game {
         this.camera.y = Math.max(0, Math.min(this.camera.y, this.worldHeight - this.canvas.height));
     }
 
-    checkCollisions() {
+    checkCollisions(dt) {
         if (!this.player || !this.waveManager) return;
 
         // Player vs Enemies
@@ -4308,7 +4326,7 @@ class Game {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < enemy.radius + this.player.radius) {
-                const dmg = 10 * 0.016 * this.waveManager.difficulty; // Scale damage
+                const dmg = enemy.damage * dt; // Scale damage by dt
                 this.player.hp -= dmg;
                 if (this.player.hp <= 0) {
                     this.gameOver();

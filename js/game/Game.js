@@ -103,7 +103,12 @@ export class Game {
         // Map 1: 1.0, Map 2: 1.5, Map 3: 2.0, Loop: +0.5 per loop
         const baseDifficulty = 1.0 + (this.mapLevel - 1) * 0.5;
 
-        this.waveManager = new WaveManager(this, baseDifficulty);
+        let initialTime = 0;
+        if (preserveStats && this.waveManager) {
+            initialTime = this.waveManager.time;
+        }
+
+        this.waveManager = new WaveManager(this, baseDifficulty, initialTime);
         this.player = new Player(this, this.worldWidth / 2, this.worldHeight / 2);
         this.drones = []; // Initialize before applying upgrades (which might add drones)
 
@@ -220,7 +225,7 @@ export class Game {
 
             this.drones.forEach(d => d.update(dt));
 
-            this.checkCollisions();
+            this.checkCollisions(dt);
 
             // Global Death Check (catches non-collision damage like self-destructs)
             if (this.player && this.player.hp <= 0) {
@@ -230,13 +235,18 @@ export class Game {
             // Update HUD
             if (this.player && this.waveManager) {
                 const hpPercent = (this.player.hp / this.player.maxHp) * 100;
+
+                // Calculate effective difficulty for display
+                const mapMultiplier = 1 + (this.mapLevel - 1) * 0.5;
+                const effectiveDifficulty = this.waveManager.difficulty * mapMultiplier;
+
                 this.ui.updateHUD(
                     hpPercent,
                     this.ene,
                     this.player.hp,
                     this.player.maxHp,
                     this.waveManager.time,
-                    this.waveManager.difficulty
+                    effectiveDifficulty
                 );
             }
         }
@@ -252,7 +262,7 @@ export class Game {
         this.camera.y = Math.max(0, Math.min(this.camera.y, this.worldHeight - this.canvas.height));
     }
 
-    checkCollisions() {
+    checkCollisions(dt) {
         if (!this.player || !this.waveManager) return;
 
         // Player vs Enemies
@@ -262,7 +272,7 @@ export class Game {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < enemy.radius + this.player.radius) {
-                const dmg = 10 * 0.016 * this.waveManager.difficulty; // Scale damage
+                const dmg = enemy.damage * dt; // Scale damage by dt
                 this.player.hp -= dmg;
                 if (this.player.hp <= 0) {
                     this.gameOver();
@@ -520,7 +530,12 @@ export class Game {
     }
 
     nextMap() {
-        this.mapLevel++;
+        // Loop back to stage 1 after stage 3
+        if (this.mapLevel >= 3) {
+            this.mapLevel = 1;
+        } else {
+            this.mapLevel++;
+        }
         this.startRun(true); // Preserve stats
         this.setState('playing');
     }

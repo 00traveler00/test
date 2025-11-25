@@ -209,7 +209,7 @@ export class Lizard extends Enemy {
 
     shoot() {
         this.game.enemyProjectiles.push(
-            new EnemyProjectile(this.game, this.x, this.y, this.game.player)
+            new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'normal', this.damage)
         );
     }
 
@@ -309,7 +309,7 @@ export class Totem extends Enemy {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < 150) { // Blast radius
-            this.game.player.hp -= 0.5; // Rapid damage
+            this.game.player.hp -= this.damage * 2.0 * 0.016; // Rapid damage (scaled)
             if (this.game.player.hp <= 0) this.game.setState('result');
         }
     }
@@ -459,7 +459,7 @@ export class MissileEnemy extends Enemy {
 
     shoot() {
         this.game.enemyProjectiles.push(
-            new EnemyMissile(this.game, this.x, this.y, this.game.player)
+            new EnemyMissile(this.game, this.x, this.y, this.game.player, this.damage)
         );
     }
 
@@ -540,7 +540,7 @@ export class BeamEnemy extends Enemy {
             while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
 
             if (Math.abs(angleDiff) < 0.15) { // Narrow beam
-                p.hp -= 0.5; // Rapid damage
+                p.hp -= this.damage * 2.0 * 0.016; // Rapid damage (scaled)
                 if (p.hp <= 0) this.game.setState('result');
             }
         }

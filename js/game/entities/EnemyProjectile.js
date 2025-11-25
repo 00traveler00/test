@@ -1,12 +1,12 @@
 export class EnemyProjectile {
-    constructor(game, x, y, target, type = 'normal') {
+    constructor(game, x, y, target, type = 'normal', damage = 10) {
         this.game = game;
         this.x = x;
         this.y = y;
         this.type = type; // normal, fireball, void, slime, plasma
         this.speed = 200;
         this.radius = 6;
-        this.damage = 10;
+        this.damage = damage;
         this.markedForDeletion = false;
         this.color = '#ff4400';
         this.timer = 0; // For animation

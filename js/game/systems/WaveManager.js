@@ -4,13 +4,13 @@ import { Chest } from '../entities/Chest.js';
 import { Overlord, SlimeKing, MechaGolem, VoidPhantom, CrimsonDragon } from '../entities/Boss.js';
 
 export class WaveManager {
-    constructor(game, initialDifficulty = 1.0) {
+    constructor(game, initialDifficulty = 1.0, initialTime = 0) {
         this.game = game;
         this.enemies = [];
         this.spawnTimer = 0;
         this.spawnInterval = 1.5;
 
-        this.time = 0; // Total run time in seconds
+        this.time = initialTime; // Total run time in seconds
         this.initialDifficulty = initialDifficulty;
         this.difficulty = initialDifficulty; // Difficulty coefficient
 
@@ -55,7 +55,7 @@ export class WaveManager {
 
         // Map Level Scaling (Make later bosses even tougher)
         const mapLevel = this.game.mapLevel || 1;
-        boss.hp *= (1 + (mapLevel - 1) * 0.5);
+        boss.hp *= (1 + (mapLevel - 1) * 0.15);
         boss.maxHp = boss.hp;
 
         this.enemies.push(boss);
@@ -169,9 +169,16 @@ export class WaveManager {
             }
 
             // Apply Difficulty Scaling
+            // Time-based scaling
             enemyType.hp *= this.difficulty;
             enemyType.maxHp *= this.difficulty;
             enemyType.damage *= this.difficulty;
+
+            // Map Level Scaling (Stage 2 is harder than Stage 1)
+            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.15; // +15% per stage
+            enemyType.hp *= stageMultiplier;
+            enemyType.maxHp *= stageMultiplier;
+            enemyType.damage *= stageMultiplier;
 
             this.enemies.push(enemyType);
         }

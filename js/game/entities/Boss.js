@@ -160,7 +160,7 @@ export class Overlord extends BaseBoss {
                 const angle = (Math.PI * 2 / projectiles) * i + offset;
                 const tx = this.x + Math.cos(angle) * 100;
                 const ty = this.y + Math.sin(angle) * 100;
-                const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma');
+                const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma', this.damage);
                 p.speed = 250;
                 p.color = '#ff00ff'; // Override color for Overlord plasma
                 this.game.enemyProjectiles.push(p);
@@ -200,9 +200,10 @@ export class Overlord extends BaseBoss {
             while (angleDiff <= -Math.PI) angleDiff += Math.PI * 2;
             while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
             if (Math.abs(angleDiff) < 0.2) {
-                p.hp -= 1.0;
+                const dmg = this.damage * 2.0 * 0.016; // Rapid damage
+                p.hp -= dmg;
                 if (p.hp <= 0) this.game.setState('result');
-                this.game.showDamage(p.x, p.y, 1, '#00ffff');
+                this.game.showDamage(p.x, p.y, Math.ceil(dmg), '#00ffff');
             }
         }
     }
@@ -342,8 +343,8 @@ export class SlimeKing extends BaseBoss {
             this.y = this.jumpTarget.y;
             const dist = Math.hypot(this.game.player.x - this.x, this.game.player.y - this.y);
             if (dist < 150) {
-                this.game.player.hp -= 20;
-                this.game.showDamage(this.game.player.x, this.game.player.y, 20, '#00ff88');
+                this.game.player.hp -= this.damage;
+                this.game.showDamage(this.game.player.x, this.game.player.y, Math.round(this.damage), '#00ff88');
             }
             // Impact Particles
             for (let i = 0; i < 30; i++) {
@@ -361,7 +362,7 @@ export class SlimeKing extends BaseBoss {
         this.stateDuration = 1.0;
         for (let i = 0; i < 3; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: this.x + Math.cos(angle) * 100, y: this.y + Math.sin(angle) * 100 }, 'slime');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: this.x + Math.cos(angle) * 100, y: this.y + Math.sin(angle) * 100 }, 'slime', this.damage);
             p.radius = 10;
             this.game.enemyProjectiles.push(p);
         }
@@ -480,9 +481,9 @@ export class MechaGolem extends BaseBoss {
             const angle = Math.atan2(this.game.player.y - this.y, this.game.player.x - this.x) + i * 0.3;
             const tx = this.x + Math.cos(angle) * 100;
             const ty = this.y + Math.sin(angle) * 100;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma', this.damage * 1.5);
             p.radius = 20;
-            p.damage = 40;
+            // p.damage = 40; // Removed hardcode
             p.color = '#ff0000';
             this.game.enemyProjectiles.push(p);
         }
@@ -624,7 +625,7 @@ export class VoidPhantom extends BaseBoss {
             const angle = (Math.PI * 2 / projectiles) * i;
             const tx = this.x + Math.cos(angle) * 100;
             const ty = this.y + Math.sin(angle) * 100;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'void');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'void', this.damage);
             this.game.enemyProjectiles.push(p);
         }
     }
@@ -743,7 +744,7 @@ export class CrimsonDragon extends BaseBoss {
             const angle = angleToPlayer + spread;
             const tx = this.x + Math.cos(angle) * 100;
             const ty = this.y + Math.sin(angle) * 100;
-            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'fireball');
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'fireball', this.damage);
             p.radius = 12;
             this.game.enemyProjectiles.push(p);
         }
@@ -752,7 +753,7 @@ export class CrimsonDragon extends BaseBoss {
     startMeteor() {
         this.state = 'meteor';
         this.stateDuration = 1.0;
-        const p = new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'fireball');
+        const p = new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'fireball', this.damage * 2.0);
         p.speed = 400;
         p.radius = 30;
         this.game.enemyProjectiles.push(p);
