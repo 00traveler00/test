@@ -941,6 +941,7 @@ class Chest {
         // Pre-roll rewards
         this.contents = this.generateRewards();
 
+        this.requiresExit = false;
         // Store difficulty at generation time for price scaling
         this.difficulty = (game.waveManager) ? game.waveManager.difficulty : 1.0;
     }
@@ -964,6 +965,14 @@ class Chest {
         const dx = this.game.player.x - this.x;
         const dy = this.game.player.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // If we require the player to exit, check if they are far enough away
+        if (this.requiresExit) {
+            if (dist > this.radius + 20) {
+                this.requiresExit = false;
+            }
+            return; // Don't open yet
+        }
 
         // Only open if player is very close and chest is active
         if (dist < this.radius + 10) {
@@ -3464,13 +3473,11 @@ class Game {
     }
 
     closeRewardWithoutPurchase() {
-        // Re-activate the chest after a short cooldown to avoid immediate re-open
+        // Re-activate the chest but require player to step away
         if (this.currentChest) {
             const chest = this.currentChest;
-            chest.active = false; // temporarily deactivate
-            setTimeout(() => {
-                chest.active = true;
-            }, 500); // 0.5s cooldown
+            chest.active = true;
+            chest.requiresExit = true;
         }
         this.currentChest = null;
         this.setState('playing');

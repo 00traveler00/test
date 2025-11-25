@@ -11,6 +11,7 @@ export class Chest {
         // Pre-roll rewards
         this.contents = this.generateRewards();
 
+        this.requiresExit = false;
         // Store difficulty at generation time for price scaling
         this.difficulty = (game.waveManager) ? game.waveManager.difficulty : 1.0;
     }
@@ -34,6 +35,14 @@ export class Chest {
         const dx = this.game.player.x - this.x;
         const dy = this.game.player.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // If we require the player to exit, check if they are far enough away
+        if (this.requiresExit) {
+            if (dist > this.radius + 20) {
+                this.requiresExit = false;
+            }
+            return; // Don't open yet
+        }
 
         // Only open if player is very close and chest is active
         if (dist < this.radius + 10) {

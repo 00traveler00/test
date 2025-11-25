@@ -350,13 +350,11 @@ export class Game {
     }
 
     closeRewardWithoutPurchase() {
-        // Re-activate the chest after a short cooldown to avoid immediate re-open
+        // Re-activate the chest but require player to step away
         if (this.currentChest) {
             const chest = this.currentChest;
-            chest.active = false; // temporarily deactivate
-            setTimeout(() => {
-                chest.active = true;
-            }, 500); // 0.5s cooldown
+            chest.active = true;
+            chest.requiresExit = true;
         }
         this.currentChest = null;
         this.setState('playing');
