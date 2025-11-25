@@ -23,7 +23,7 @@ export class UIManager {
     setupScreens() {
         // Title Screen
         this.screens.title = this.createScreen('title-screen', `
-            <h1 class="title-text">Yurufuwa<br>Cyberpunk<br>Survivors</h1>
+            <h1 class="title-text">Cyber<br>Survivor</h1>
             <button id="btn-start" class="cyber-btn">START</button>
             <button id="btn-options" class="cyber-btn secondary">OPTIONS</button>
         `);

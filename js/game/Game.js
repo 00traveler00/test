@@ -111,19 +111,20 @@ export class Game {
         this.upgradeSystem.applyUpgrades(this.player);
 
         if (preserveStats) {
-            // Restore stats from previous run (if higher than base)
-            if (prevMaxHp) this.player.maxHp = Math.max(this.player.maxHp, prevMaxHp);
-            if (prevHp) this.player.hp = Math.min(this.player.hp, this.player.maxHp); // Don't exceed max
-            if (prevDamage) this.player.damage = Math.max(this.player.damage, prevDamage);
-            if (prevSpeed) this.player.speed = Math.max(this.player.speed, prevSpeed);
-
-            // Restore Relics
+            // Restore Relics FIRST to establish Max Stats correctly
+            // (Base Stats + Upgrades are already applied by new Player() and applyUpgrades())
             this.acquiredRelics = prevRelics;
             this.acquiredRelics.forEach(relic => {
                 relic.effect(this.player);
             });
 
-            // Heal player slightly on new stage?
+            // Restore HP (Maintain percentage from previous run)
+            if (prevHp && prevMaxHp) {
+                const hpPercent = prevHp / prevMaxHp;
+                this.player.hp = this.player.maxHp * hpPercent;
+            }
+
+            // Heal player slightly on new stage
             this.player.hp = Math.min(this.player.hp + 20, this.player.maxHp);
         } else {
             this.acquiredRelics = [];

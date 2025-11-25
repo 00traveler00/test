@@ -106,7 +106,7 @@ export class AudioManager {
 
     // Simple short sound effects for actions
     // Volume lowered significantly to reduce noise
-    playShoot() { this._playOneShot('square', 800, 0.05, 0.05, 0.01); }
+    playShoot() { this._playOneShot('square', 800, 0.02, 0.05, 0.01); }
     playHit() { this._playOneShot('sawtooth', 200, 0.1, 0.1, 0.01); }
     playCollect() { this._playOneShot('sine', 800, 0.1, 0.1, 0.01, 1200); }
 

@@ -220,7 +220,7 @@ class AudioManager {
 
     // Simple short sound effects for actions
     // Volume lowered significantly to reduce noise
-    playShoot() { this._playOneShot('square', 800, 0.05, 0.05, 0.01); }
+    playShoot() { this._playOneShot('square', 800, 0.02, 0.05, 0.01); }
     playHit() { this._playOneShot('sawtooth', 200, 0.1, 0.1, 0.01); }
     playCollect() { this._playOneShot('sine', 800, 0.1, 0.1, 0.01, 1200); }
 
@@ -2316,7 +2316,7 @@ class UIManager {
     setupScreens() {
         // Title Screen
         this.screens.title = this.createScreen('title-screen', `
-            <h1 class="title-text">Yurufuwa<br>Cyberpunk<br>Survivors</h1>
+            <h1 class="title-text">Cyber<br>Survivor</h1>
             <button id="btn-start" class="cyber-btn">START</button>
             <button id="btn-options" class="cyber-btn secondary">OPTIONS</button>
         `);
@@ -3101,19 +3101,20 @@ class Game {
         this.upgradeSystem.applyUpgrades(this.player);
 
         if (preserveStats) {
-            // Restore stats from previous run (if higher than base)
-            if (prevMaxHp) this.player.maxHp = Math.max(this.player.maxHp, prevMaxHp);
-            if (prevHp) this.player.hp = Math.min(this.player.hp, this.player.maxHp); // Don't exceed max
-            if (prevDamage) this.player.damage = Math.max(this.player.damage, prevDamage);
-            if (prevSpeed) this.player.speed = Math.max(this.player.speed, prevSpeed);
-
-            // Restore Relics
+            // Restore Relics FIRST to establish Max Stats correctly
+            // (Base Stats + Upgrades are already applied by new Player() and applyUpgrades())
             this.acquiredRelics = prevRelics;
             this.acquiredRelics.forEach(relic => {
                 relic.effect(this.player);
             });
 
-            // Heal player slightly on new stage?
+            // Restore HP (Maintain percentage from previous run)
+            if (prevHp && prevMaxHp) {
+                const hpPercent = prevHp / prevMaxHp;
+                this.player.hp = this.player.maxHp * hpPercent;
+            }
+
+            // Heal player slightly on new stage
             this.player.hp = Math.min(this.player.hp + 20, this.player.maxHp);
         } else {
             this.acquiredRelics = [];
