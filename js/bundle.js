@@ -2373,14 +2373,14 @@ class UIManager {
                         <div id="hp-bar" class="bar hp"></div>
                         <span id="hp-text" class="bar-text">100/100</span>
                     </div>
+                    <div class="time-container">
+                        <span id="game-time">00:00</span>
+                        <span id="game-difficulty" class="difficulty-text">Lv. 1.00</span>
+                    </div>
                 </div>
                 <div class="hud-center">
                     <div class="score-container">
                         Ene: <span id="score-ene">0</span>
-                    </div>
-                    <div class="time-container">
-                        <span id="game-time">00:00</span>
-                        <span id="game-difficulty" class="difficulty-text">Lv. 1.00</span>
                     </div>
                 </div>
                 <div class="hud-right">
