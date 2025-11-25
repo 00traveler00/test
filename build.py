@@ -41,6 +41,7 @@ files = [
     'js/game/entities/Obstacle.js',
     'js/game/entities/Chest.js',
     'js/game/entities/BossAltar.js',
+    'js/game/entities/NextStageAltar.js',
     'js/game/entities/Enemy.js',
     'js/game/entities/Player.js',
     'js/game/ui/Minimap.js',

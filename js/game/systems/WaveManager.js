@@ -15,6 +15,8 @@ export class WaveManager {
 
         this.bossAltar = null;
         this.bossActive = false;
+        this.bossAltarPos = { x: 0, y: 0 }; // Track where the altar was
+        this.spawningStopped = false;
     }
 
     spawnAltar() {
@@ -30,6 +32,7 @@ export class WaveManager {
         const cy = Math.max(100, Math.min(y, this.game.worldHeight - 100));
 
         this.bossAltar = new BossAltar(this.game, cx, cy);
+        this.bossAltarPos = { x: cx, y: cy }; // Save position
         console.log("Boss Altar Spawned at", cx, cy);
     }
 
@@ -69,25 +72,34 @@ export class WaveManager {
         console.log(`BOSS SUMMONED: ${boss.type.toUpperCase()}`);
     }
 
+    stopSpawning() {
+        this.spawningStopped = true;
+        // Optional: Clear existing non-boss enemies?
+        // this.enemies = this.enemies.filter(e => e.isBoss);
+    }
+
     update(dt) {
         if (this.bossAltar) this.bossAltar.update(dt);
 
         this.time += dt;
-        this.spawnTimer += dt;
 
-        // RoR2 Style Difficulty Scaling
-        // Difficulty increases by 20% every 60 seconds
-        // Base difficulty is set in constructor (increases with loops)
-        const timeScaling = 1.0 + (this.time / 60.0) * 0.5;
-        this.difficulty = this.initialDifficulty * timeScaling;
+        if (!this.spawningStopped) {
+            this.spawnTimer += dt;
 
-        // Spawn Interval decreases with difficulty
-        // Base 1.5s -> limit to 0.2s
-        const currentInterval = Math.max(0.2, 1.5 / Math.sqrt(this.difficulty));
+            // RoR2 Style Difficulty Scaling
+            // Difficulty increases by 20% every 60 seconds
+            // Base difficulty is set in constructor (increases with loops)
+            const timeScaling = 1.0 + (this.time / 60.0) * 0.5;
+            this.difficulty = this.initialDifficulty * timeScaling;
 
-        if (this.spawnTimer >= currentInterval) {
-            this.spawnEnemy();
-            this.spawnTimer = 0;
+            // Spawn Interval decreases with difficulty
+            // Base 1.5s -> limit to 0.2s
+            const currentInterval = Math.max(0.2, 1.5 / Math.sqrt(this.difficulty));
+
+            if (this.spawnTimer >= currentInterval) {
+                this.spawnEnemy();
+                this.spawnTimer = 0;
+            }
         }
 
         this.enemies.forEach(enemy => {

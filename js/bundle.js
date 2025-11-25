@@ -1061,6 +1061,75 @@ class BossAltar {
 }
 
 
+// --- js/game/entities/NextStageAltar.js ---
+class NextStageAltar {
+    constructor(game, x, y) {
+        this.game = game;
+        this.x = x;
+        this.y = y;
+        this.radius = 40;
+        this.active = true;
+        this.pulse = 0;
+    }
+
+    update(dt) {
+        this.pulse += dt * 3;
+
+        // Check collision with player
+        const dx = this.game.player.x - this.x;
+        const dy = this.game.player.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < this.radius + this.game.player.radius) {
+            this.game.nextStage();
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Glow effect
+        const glowSize = 50 + Math.sin(this.pulse) * 10;
+        const gradient = ctx.createRadialGradient(0, 0, 10, 0, 0, glowSize);
+        gradient.addColorStop(0, 'rgba(0, 255, 255, 1)');
+        gradient.addColorStop(0.5, 'rgba(0, 255, 255, 0.5)');
+        gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Base
+        ctx.fillStyle = '#222';
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, -30);
+        ctx.lineTo(26, 15);
+        ctx.lineTo(-26, 15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Floating Icon (Arrow Up or Portal)
+        ctx.fillStyle = '#fff';
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('▲', 0, -10 + Math.sin(this.pulse * 2) * 5);
+
+        // Text
+        ctx.fillStyle = '#00ffff';
+        ctx.font = '16px monospace';
+        ctx.fillText('NEXT STAGE', 0, 40);
+
+        ctx.restore();
+    }
+}
+
+
 // --- js/game/entities/Enemy.js ---
 
 
@@ -2129,6 +2198,8 @@ class WaveManager {
 
         this.bossAltar = null;
         this.bossActive = false;
+        this.bossAltarPos = { x: 0, y: 0 }; // Track where the altar was
+        this.spawningStopped = false;
     }
 
     spawnAltar() {
@@ -2144,6 +2215,7 @@ class WaveManager {
         const cy = Math.max(100, Math.min(y, this.game.worldHeight - 100));
 
         this.bossAltar = new BossAltar(this.game, cx, cy);
+        this.bossAltarPos = { x: cx, y: cy }; // Save position
         console.log("Boss Altar Spawned at", cx, cy);
     }
 
@@ -2183,25 +2255,34 @@ class WaveManager {
         console.log(`BOSS SUMMONED: ${boss.type.toUpperCase()}`);
     }
 
+    stopSpawning() {
+        this.spawningStopped = true;
+        // Optional: Clear existing non-boss enemies?
+        // this.enemies = this.enemies.filter(e => e.isBoss);
+    }
+
     update(dt) {
         if (this.bossAltar) this.bossAltar.update(dt);
 
         this.time += dt;
-        this.spawnTimer += dt;
 
-        // RoR2 Style Difficulty Scaling
-        // Difficulty increases by 20% every 60 seconds
-        // Base difficulty is set in constructor (increases with loops)
-        const timeScaling = 1.0 + (this.time / 60.0) * 0.5;
-        this.difficulty = this.initialDifficulty * timeScaling;
+        if (!this.spawningStopped) {
+            this.spawnTimer += dt;
 
-        // Spawn Interval decreases with difficulty
-        // Base 1.5s -> limit to 0.2s
-        const currentInterval = Math.max(0.2, 1.5 / Math.sqrt(this.difficulty));
+            // RoR2 Style Difficulty Scaling
+            // Difficulty increases by 20% every 60 seconds
+            // Base difficulty is set in constructor (increases with loops)
+            const timeScaling = 1.0 + (this.time / 60.0) * 0.5;
+            this.difficulty = this.initialDifficulty * timeScaling;
 
-        if (this.spawnTimer >= currentInterval) {
-            this.spawnEnemy();
-            this.spawnTimer = 0;
+            // Spawn Interval decreases with difficulty
+            // Base 1.5s -> limit to 0.2s
+            const currentInterval = Math.max(0.2, 1.5 / Math.sqrt(this.difficulty));
+
+            if (this.spawnTimer >= currentInterval) {
+                this.spawnEnemy();
+                this.spawnTimer = 0;
+            }
         }
 
         this.enemies.forEach(enemy => {
@@ -2984,6 +3065,33 @@ class UIManager {
             ctx.beginPath(); ctx.arc(cx, cy, 10 * s, 0, Math.PI * 2); ctx.stroke();
         }
     }
+
+    showMessage(text, duration = 3000) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'floating-message';
+        msgDiv.innerText = text;
+        msgDiv.style.position = 'absolute';
+        msgDiv.style.top = '20%';
+        msgDiv.style.left = '50%';
+        msgDiv.style.transform = 'translate(-50%, -50%)';
+        msgDiv.style.background = 'rgba(0, 0, 0, 0.8)';
+        msgDiv.style.color = '#00ffff';
+        msgDiv.style.padding = '20px 40px';
+        msgDiv.style.border = '2px solid #00ffff';
+        msgDiv.style.borderRadius = '10px';
+        msgDiv.style.fontSize = '24px';
+        msgDiv.style.fontWeight = 'bold';
+        msgDiv.style.zIndex = '1000';
+        msgDiv.style.pointerEvents = 'none';
+        msgDiv.style.animation = 'fadeInOut 0.5s ease-in-out';
+
+        this.uiLayer.appendChild(msgDiv);
+
+        setTimeout(() => {
+            msgDiv.style.opacity = '0';
+            setTimeout(() => msgDiv.remove(), 500);
+        }, duration);
+    }
 }
 
 
@@ -3186,6 +3294,11 @@ class Game {
             }
             if (this.waveManager) this.waveManager.update(dt);
 
+            // Update Next Stage Altar
+            if (this.nextStageAltar) {
+                this.nextStageAltar.update(dt);
+            }
+
             this.drops.forEach(d => d.update(dt));
             this.drops = this.drops.filter(d => !d.markedForDeletion);
 
@@ -3379,6 +3492,9 @@ class Game {
             this.drawBackground();
             this.drawGrid();
 
+            this.ctx.lineWidth = 5;
+            this.ctx.strokeRect(0, 0, this.worldWidth, this.worldHeight);
+
             // Draw Entities
             this.obstacles.forEach(o => o.draw(this.ctx));
             this.chests.forEach(c => c.draw(this.ctx));
@@ -3387,15 +3503,12 @@ class Game {
             if (this.player) this.player.draw(this.ctx);
             if (this.waveManager) this.waveManager.draw(this.ctx);
 
+            if (this.nextStageAltar) this.nextStageAltar.draw(this.ctx);
+
             this.drones.forEach(d => d.draw(this.ctx));
             this.enemyProjectiles.forEach(p => p.draw(this.ctx));
             this.particles.forEach(p => p.draw(this.ctx));
             this.floatingTexts.forEach(t => t.draw(this.ctx));
-
-            // Draw World Border
-            this.ctx.strokeStyle = '#ff00ff';
-            this.ctx.lineWidth = 5;
-            this.ctx.strokeRect(0, 0, this.worldWidth, this.worldHeight);
 
             this.ctx.restore();
 
@@ -3509,6 +3622,31 @@ class Game {
     }
 
     bossDefeated() {
+        console.log("BOSS DEFEATED!");
+        this.audio.playLevelUp(); // Victory sound
+
+        // Stop Spawning
+        this.waveManager.stopSpawning();
+
+        // Spawn Next Stage Altar at the location where the boss altar was
+        const pos = this.waveManager.bossAltarPos;
+        // Fallback if pos is missing (shouldn't happen if waveManager is correct)
+        const tx = pos ? pos.x : this.player.x;
+        const ty = pos ? pos.y : this.player.y - 100;
+
+        this.nextStageAltar = new NextStageAltar(this, tx, ty);
+
+        // Show message
+        this.ui.showMessage("BOSS DEFEATED! GO TO THE ALTAR!", 5000);
+    }
+
+    nextStage() {
+        // Called by Altar
+        this.completeStage();
+    }
+
+    completeStage() {
+        this.nextStageAltar = null;
         this.setState('result');
         const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
         this.money += bonusMoney;

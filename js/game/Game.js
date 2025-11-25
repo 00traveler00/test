@@ -6,13 +6,13 @@ import { UIManager } from '../ui/UIManager.js';
 import { UpgradeSystem } from './systems/UpgradeSystem.js';
 import { EnemyProjectile } from './entities/EnemyProjectile.js';
 import { Chest } from './entities/Chest.js';
-import { FloatingText } from './entities/FloatingText.js';
+import { FloatingText } from './ui/FloatingText.js';
 import { Obstacle } from './entities/Obstacle.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { Minimap } from './ui/Minimap.js';
 import { Particle } from './entities/Particle.js';
 import { Drone } from './entities/Drone.js';
-
+import { NextStageAltar } from './entities/NextStageAltar.js';
 export class Game {
     constructor(canvas) {
         this.canvas = canvas;
@@ -195,6 +195,11 @@ export class Game {
                 this.updateCamera();
             }
             if (this.waveManager) this.waveManager.update(dt);
+
+            // Update Next Stage Altar
+            if (this.nextStageAltar) {
+                this.nextStageAltar.update(dt);
+            }
 
             this.drops.forEach(d => d.update(dt));
             this.drops = this.drops.filter(d => !d.markedForDeletion);
@@ -389,6 +394,9 @@ export class Game {
             this.drawBackground();
             this.drawGrid();
 
+            this.ctx.lineWidth = 5;
+            this.ctx.strokeRect(0, 0, this.worldWidth, this.worldHeight);
+
             // Draw Entities
             this.obstacles.forEach(o => o.draw(this.ctx));
             this.chests.forEach(c => c.draw(this.ctx));
@@ -397,15 +405,12 @@ export class Game {
             if (this.player) this.player.draw(this.ctx);
             if (this.waveManager) this.waveManager.draw(this.ctx);
 
+            if (this.nextStageAltar) this.nextStageAltar.draw(this.ctx);
+
             this.drones.forEach(d => d.draw(this.ctx));
             this.enemyProjectiles.forEach(p => p.draw(this.ctx));
             this.particles.forEach(p => p.draw(this.ctx));
             this.floatingTexts.forEach(t => t.draw(this.ctx));
-
-            // Draw World Border
-            this.ctx.strokeStyle = '#ff00ff';
-            this.ctx.lineWidth = 5;
-            this.ctx.strokeRect(0, 0, this.worldWidth, this.worldHeight);
 
             this.ctx.restore();
 
@@ -519,6 +524,31 @@ export class Game {
     }
 
     bossDefeated() {
+        console.log("BOSS DEFEATED!");
+        this.audio.playLevelUp(); // Victory sound
+
+        // Stop Spawning
+        this.waveManager.stopSpawning();
+
+        // Spawn Next Stage Altar at the location where the boss altar was
+        const pos = this.waveManager.bossAltarPos;
+        // Fallback if pos is missing (shouldn't happen if waveManager is correct)
+        const tx = pos ? pos.x : this.player.x;
+        const ty = pos ? pos.y : this.player.y - 100;
+
+        this.nextStageAltar = new NextStageAltar(this, tx, ty);
+
+        // Show message
+        this.ui.showMessage("BOSS DEFEATED! GO TO THE ALTAR!", 5000);
+    }
+
+    nextStage() {
+        // Called by Altar
+        this.completeStage();
+    }
+
+    completeStage() {
+        this.nextStageAltar = null;
         this.setState('result');
         const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
         this.money += bonusMoney;

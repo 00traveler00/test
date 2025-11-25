@@ -691,4 +691,31 @@ export class UIManager {
             ctx.beginPath(); ctx.arc(cx, cy, 10 * s, 0, Math.PI * 2); ctx.stroke();
         }
     }
+
+    showMessage(text, duration = 3000) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'floating-message';
+        msgDiv.innerText = text;
+        msgDiv.style.position = 'absolute';
+        msgDiv.style.top = '20%';
+        msgDiv.style.left = '50%';
+        msgDiv.style.transform = 'translate(-50%, -50%)';
+        msgDiv.style.background = 'rgba(0, 0, 0, 0.8)';
+        msgDiv.style.color = '#00ffff';
+        msgDiv.style.padding = '20px 40px';
+        msgDiv.style.border = '2px solid #00ffff';
+        msgDiv.style.borderRadius = '10px';
+        msgDiv.style.fontSize = '24px';
+        msgDiv.style.fontWeight = 'bold';
+        msgDiv.style.zIndex = '1000';
+        msgDiv.style.pointerEvents = 'none';
+        msgDiv.style.animation = 'fadeInOut 0.5s ease-in-out';
+
+        this.uiLayer.appendChild(msgDiv);
+
+        setTimeout(() => {
+            msgDiv.style.opacity = '0';
+            setTimeout(() => msgDiv.remove(), 500);
+        }, duration);
+    }
 }
