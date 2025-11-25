@@ -26,6 +26,7 @@ export class UIManager {
             <h1 class="title-text">Cyber<br>Survivor</h1>
             <button id="btn-start" class="cyber-btn">START</button>
             <button id="btn-options" class="cyber-btn secondary">OPTIONS</button>
+            <button id="btn-reset" class="cyber-btn secondary" style="margin-top: 20px; background: #ff4444;">RESET DATA</button>
         `);
 
         // Options Screen
@@ -70,6 +71,7 @@ export class UIManager {
                 </div>
             </div>
             <button id="btn-mission" class="cyber-btn">START MISSION</button>
+            <button id="btn-back-title" class="cyber-btn secondary" style="margin-top: 10px;">BACK TO TITLE</button>
         `);
 
         // HUD (Heads Up Display)
@@ -218,6 +220,15 @@ export class UIManager {
         this.bindButton('btn-start', () => this.game.setState('home'));
         this.bindButton('btn-options', () => this.showScreen('options'));
 
+        // Reset Button
+        this.bindButton('btn-reset', () => {
+            if (confirm('全てのゲームデータをリセットしますか？\nReset all game data?')) {
+                localStorage.clear();
+                alert('データがリセットされました！\nData has been reset!');
+                location.reload();
+            }
+        });
+
         // Options
         this.bindButton('btn-close-options', () => this.showScreen('title'));
 
@@ -244,6 +255,9 @@ export class UIManager {
             this.game.upgradeSystem.purchase('damage');
             this.updateHome();
         });
+
+        // Back to Title from Home
+        this.bindButton('btn-back-title', () => this.game.setState('title'));
 
         const charCards = document.querySelectorAll('.char-card');
         charCards.forEach(card => {

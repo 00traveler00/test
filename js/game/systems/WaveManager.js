@@ -79,9 +79,9 @@ export class WaveManager {
             this.spawnTimer += dt;
 
             // RoR2 Style Difficulty Scaling
-            // Difficulty increases by 20% every 60 seconds
+            // Difficulty increases by 30% every 60 seconds (以前は50%)
             // Base difficulty is set in constructor (increases with loops)
-            const timeScaling = 1.0 + (this.time / 60.0) * 0.5;
+            const timeScaling = 1.0 + (this.time / 60.0) * 0.3;
             this.difficulty = this.initialDifficulty * timeScaling;
 
             // Spawn Interval decreases with difficulty

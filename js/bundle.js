@@ -3433,9 +3433,9 @@ class WaveManager {
             this.spawnTimer += dt;
 
             // RoR2 Style Difficulty Scaling
-            // Difficulty increases by 20% every 60 seconds
+            // Difficulty increases by 30% every 60 seconds (以前は50%)
             // Base difficulty is set in constructor (increases with loops)
-            const timeScaling = 1.0 + (this.time / 60.0) * 0.5;
+            const timeScaling = 1.0 + (this.time / 60.0) * 0.3;
             this.difficulty = this.initialDifficulty * timeScaling;
 
             // Spawn Interval decreases with difficulty
@@ -3623,6 +3623,7 @@ class UIManager {
             <h1 class="title-text">Cyber<br>Survivor</h1>
             <button id="btn-start" class="cyber-btn">START</button>
             <button id="btn-options" class="cyber-btn secondary">OPTIONS</button>
+            <button id="btn-reset" class="cyber-btn secondary" style="margin-top: 20px; background: #ff4444;">RESET DATA</button>
         `);
 
         // Options Screen
@@ -3667,6 +3668,7 @@ class UIManager {
                 </div>
             </div>
             <button id="btn-mission" class="cyber-btn">START MISSION</button>
+            <button id="btn-back-title" class="cyber-btn secondary" style="margin-top: 10px;">BACK TO TITLE</button>
         `);
 
         // HUD (Heads Up Display)
@@ -3815,6 +3817,15 @@ class UIManager {
         this.bindButton('btn-start', () => this.game.setState('home'));
         this.bindButton('btn-options', () => this.showScreen('options'));
 
+        // Reset Button
+        this.bindButton('btn-reset', () => {
+            if (confirm('全てのゲームデータをリセットしますか？\nReset all game data?')) {
+                localStorage.clear();
+                alert('データがリセットされました！\nData has been reset!');
+                location.reload();
+            }
+        });
+
         // Options
         this.bindButton('btn-close-options', () => this.showScreen('title'));
 
@@ -3841,6 +3852,9 @@ class UIManager {
             this.game.upgradeSystem.purchase('damage');
             this.updateHome();
         });
+
+        // Back to Title from Home
+        this.bindButton('btn-back-title', () => this.game.setState('title'));
 
         const charCards = document.querySelectorAll('.char-card');
         charCards.forEach(card => {
@@ -4477,10 +4491,10 @@ class Game {
         let prevRelics = this.acquiredRelics;
 
         // Calculate difficulty based on map level
-        // ステージごとの難易度上昇を0.15に削減（以前は0.5）
-        // ループごとに+1.5の難易度追加
-        const stageDifficulty = 1.0 + (this.mapLevel - 1) * 0.15;
-        const loopDifficulty = this.loopCount * 1.5;
+        // ステージごとの難易度上昇を0.08にさらに削減（以前は0.15→0.5）
+        // ループごとに+0.8の難易度追加（以前は1.5）
+        const stageDifficulty = 1.0 + (this.mapLevel - 1) * 0.08;
+        const loopDifficulty = this.loopCount * 0.8;
         const baseDifficulty = stageDifficulty + loopDifficulty;
 
         let initialTime = 0;

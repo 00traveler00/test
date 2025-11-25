@@ -105,10 +105,10 @@ export class Game {
         let prevRelics = this.acquiredRelics;
 
         // Calculate difficulty based on map level
-        // ステージごとの難易度上昇を0.15に削減（以前は0.5）
-        // ループごとに+1.5の難易度追加
-        const stageDifficulty = 1.0 + (this.mapLevel - 1) * 0.15;
-        const loopDifficulty = this.loopCount * 1.5;
+        // ステージごとの難易度上昇を0.08にさらに削減（以前は0.15→0.5）
+        // ループごとに+0.8の難易度追加（以前は1.5）
+        const stageDifficulty = 1.0 + (this.mapLevel - 1) * 0.08;
+        const loopDifficulty = this.loopCount * 0.8;
         const baseDifficulty = stageDifficulty + loopDifficulty;
 
         let initialTime = 0;
