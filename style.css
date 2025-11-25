@@ -551,7 +551,11 @@ h2 {
     .hud-right {
         order: 2;
         width: 50%;
-        justify-content: flex-end;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding-top: min(25vw, 110px);
+        box-sizing: border-box;
     }
 
     .hud-center {
@@ -565,7 +569,7 @@ h2 {
     }
 
     .score-container {
-        margin-top: min(20vw, 90px);
+        margin-top: 0;
         font-size: min(8vw, 1.5rem);
         text-align: center;
         margin-right: 0;
