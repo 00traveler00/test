@@ -137,6 +137,14 @@ export class Game {
             this.totalEneCollected = 0; // Reset total collected
         }
 
+        // Debug Mode: Super stats
+        if (this.debugMode) {
+            this.player.hp = 999999999;
+            this.player.maxHp = 999999999;
+            this.player.damage = 1000;
+            console.log('DEBUG MODE ACTIVE: Super HP and Damage enabled!');
+        }
+
         this.killCount = {}; // Track kills by type
 
         this.drops = [];
@@ -435,9 +443,10 @@ export class Game {
     drawBackground() {
         // Map-specific background
         const mapLevel = this.mapLevel || 1;
+        const time = this.waveManager ? this.waveManager.time : 0;
 
         if (mapLevel === 1) {
-            // Green/Teal theme
+            // Stage 1: Green Forest
             const gradient = this.ctx.createRadialGradient(
                 this.worldWidth / 2, this.worldHeight / 2, 0,
                 this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
@@ -447,15 +456,15 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
 
-            // Particles (stars/sparkles)
+            // Sparkles
             this.ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
             for (let i = 0; i < 50; i++) {
-                const x = (i * 317 + this.waveManager.time * 10) % this.worldWidth;
-                const y = (i * 213 + this.waveManager.time * 5) % this.worldHeight;
+                const x = (i * 317 + time * 10) % this.worldWidth;
+                const y = (i * 213 + time * 5) % this.worldHeight;
                 this.ctx.fillRect(x, y, 2, 2);
             }
         } else if (mapLevel === 2) {
-            // Orange/Red theme
+            // Stage 2: Lava Zone
             const gradient = this.ctx.createRadialGradient(
                 this.worldWidth / 2, this.worldHeight / 2, 0,
                 this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
@@ -465,15 +474,15 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
 
-            // Rocky textures (rectangles)
+            // Rocky textures
             this.ctx.fillStyle = 'rgba(255, 136, 68, 0.2)';
             for (let i = 0; i < 20; i++) {
                 const x = (i * 457) % this.worldWidth;
                 const y = (i * 283) % this.worldHeight;
                 this.ctx.fillRect(x, y, 50, 30);
             }
-        } else {
-            // Purple/Pink theme
+        } else if (mapLevel === 3) {
+            // Stage 3: Void Realm
             const gradient = this.ctx.createRadialGradient(
                 this.worldWidth / 2, this.worldHeight / 2, 0,
                 this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
@@ -483,13 +492,181 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
 
-            // Glitch effects (random stripes)
-            const time = this.waveManager ? this.waveManager.time : 0;
+            // Glitch stripes
             this.ctx.fillStyle = 'rgba(255, 0, 255, 0.1)';
             for (let i = 0; i < 10; i++) {
                 const y = (i * 137 + time * 50) % this.worldHeight;
                 const h = 10 + Math.sin(time + i) * 5;
                 this.ctx.fillRect(0, y, this.worldWidth, h);
+            }
+        } else if (mapLevel === 4) {
+            // Stage 4: Ice Cave
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#0a1a2a');
+            gradient.addColorStop(1, '#050a15');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Ice crystals
+            this.ctx.fillStyle = 'rgba(136, 255, 255, 0.2)';
+            for (let i = 0; i < 30; i++) {
+                const x = (i * 241 + time * 3) % this.worldWidth;
+                const y = (i * 191 - time * 2) % this.worldHeight;
+                const size = 3 + Math.sin(time + i) * 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y - size);
+                this.ctx.lineTo(x + size, y + size);
+                this.ctx.lineTo(x - size, y + size);
+                this.ctx.fill();
+            }
+        } else if (mapLevel === 5) {
+            // Stage 5: Desert Ruins
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#2a2a0a');
+            gradient.addColorStop(1, '#151005');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Sand particles
+            this.ctx.fillStyle = 'rgba(255, 255, 136, 0.15)';
+            for (let i = 0; i < 40; i++) {
+                const x = (i * 373 + time * 30) % this.worldWidth;
+                const y = (i * 251 + Math.sin(time * 0.5 + i) * 100) % this.worldHeight;
+                this.ctx.fillRect(x, y, 1, 1);
+            }
+        } else if (mapLevel === 6) {
+            // Stage 6: Deep Ocean
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#0a151a');
+            gradient.addColorStop(1, '#020508');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Bubbles
+            this.ctx.fillStyle = 'rgba(136, 255, 255, 0.2)';
+            for (let i = 0; i < 25; i++) {
+                const x = (i * 311) % this.worldWidth;
+                const y = (this.worldHeight - (i * 197 + time * 40) % (this.worldHeight + 200));
+                const r = 2 + (i % 3);
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, r, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        } else if (mapLevel === 7) {
+            // Stage 7: Volcanic Core
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#3a1a0a');
+            gradient.addColorStop(1, '#1a0a05');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Lava flows
+            this.ctx.fillStyle = 'rgba(255, 100, 0, 0.2)';
+            for (let i = 0; i < 15; i++) {
+                const y = (i * 133 + time * 20) % this.worldHeight;
+                const w = 80 + Math.sin(time + i) * 40;
+                this.ctx.fillRect(0, y, w, 15);
+                this.ctx.fillRect(this.worldWidth - w, y, w, 15);
+            }
+        } else if (mapLevel === 8) {
+            // Stage 8: Storm Plains
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#1a1a2a');
+            gradient.addColorStop(1, '#0a0a15');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Lightning
+            if (Math.floor(time * 3) % 5 === 0) {
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                this.ctx.lineWidth = 3;
+                for (let i = 0; i < 3; i++) {
+                    const x = (i * 700) % this.worldWidth;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x + 50, 300);
+                    this.ctx.lineTo(x, 600);
+                    this.ctx.lineTo(x + 30, 1000);
+                    this.ctx.lineTo(x, this.worldHeight);
+                    this.ctx.stroke();
+                }
+            }
+        } else if (mapLevel === 9) {
+            // Stage 9: Neon City
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#1a0a1a');
+            gradient.addColorStop(1, '#0a050a');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Neon grid
+            this.ctx.strokeStyle = 'rgba(255, 0, 255, 0.1)';
+            this.ctx.lineWidth = 1;
+            const gridSize = 50;
+            for (let x = 0; x < this.worldWidth; x += gridSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, 0);
+                this.ctx.lineTo(x, this.worldHeight);
+                this.ctx.stroke();
+            }
+            for (let y = 0; y < this.worldHeight; y += gridSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, y);
+                this.ctx.lineTo(this.worldWidth, y);
+                this.ctx.stroke();
+            }
+
+            // Scanlines
+            this.ctx.fillStyle = 'rgba(0, 255, 255, 0.05)';
+            for (let i = 0; i < 20; i++) {
+                const y = (i * 100 + time * 80) % this.worldHeight;
+                this.ctx.fillRect(0, y, this.worldWidth, 2);
+            }
+        } else {
+            // Stage 10: Chaos Dimension
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            const hue1 = (time * 50) % 360;
+            const hue2 = (time * 50 + 180) % 360;
+            gradient.addColorStop(0, `hsl(${hue1}, 50%, 15%)`);
+            gradient.addColorStop(1, `hsl(${hue2}, 50%, 5%)`);
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Random shapes
+            for (let i = 0; i < 20; i++) {
+                const hue = (time * 100 + i * 36) % 360;
+                this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.1)`;
+                const x = (i * 317 + time * 50) % this.worldWidth;
+                const y = (i * 241 + time * 30) % this.worldHeight;
+                const size = 20 + Math.sin(time + i) * 15;
+                if (i % 3 === 0) {
+                    this.ctx.fillRect(x, y, size, size);
+                } else {
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
             }
         }
     }
@@ -530,8 +707,8 @@ export class Game {
     }
 
     nextMap() {
-        // Loop back to stage 1 after stage 3
-        if (this.mapLevel >= 3) {
+        // Loop back to stage 1 after stage 10
+        if (this.mapLevel >= 10) {
             this.mapLevel = 1;
         } else {
             this.mapLevel++;
@@ -559,34 +736,154 @@ export class Game {
         this.ui.showMessage("BOSS DEFEATED! GO TO THE ALTAR!", 5000);
     }
 
+
     nextStage() {
-        // Called by Altar
-        this.completeStage();
+        // Deprecated - 互換性のために残す
+        this.showStageResult();
     }
 
-    completeStage() {
-        this.nextStageAltar = null;
+    showStageResult() {
+        // 台座に触れた時に呼ばれる - 結果画面のみ表示
         this.setState('result');
+
+        // Eneとボーナスマネーを表示（まだ保存しない）
+        const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
+        document.getElementById('result-ene').innerText = this.ene;
+        document.getElementById('result-money').innerText = bonusMoney;
+
+        // ボタンテキストを設定
+        const btnLoop = document.getElementById('btn-loop');
+        const btnReturnHome = document.getElementById('btn-return-home');
+
+        if (this.mapLevel >= 10) {
+            btnLoop.innerText = "NEXT STAGE (Loop to Stage 1)";
+            btnReturnHome.style.display = 'inline-block';  // ステージ10のみ表示
+        } else {
+            btnLoop.innerText = `NEXT STAGE (Stage ${this.mapLevel + 1})`;
+            btnReturnHome.style.display = 'none';  // 非表示
+        }
+    }
+
+    cancelStageTransition() {
+        // CANCELボタン押下時 - ゲームプレイに戻る
+        this.setState('playing');
+        // 台座はそのまま残る
+    }
+
+    proceedToNextStage() {
+        // NEXT STAGEボタン押下時 - 次のマップへ
+        // 台座を削除
+        this.nextStageAltar = null;
+
+        // 次のマップへ（お金は保存しない）
+        this.nextMap();
+    }
+
+    returnToHomeAfterVictory() {
+        // ステージ10クリア後、RETURN HOMEボタン押下時
+        // 台座を削除
+        this.nextStageAltar = null;
+
+        // お金を保存
         const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
         this.money += bonusMoney;
         this.upgradeSystem.save();
 
-        document.getElementById('result-ene').innerText = this.ene;
-        document.getElementById('result-money').innerText = bonusMoney;
+        // 勝利画面を表示
+        this.setState('victory');
+        document.getElementById('victory-ene').innerText = this.totalEneCollected;
+        document.getElementById('victory-money').innerText = bonusMoney;
 
-        const btnLoop = document.getElementById('btn-loop');
-        if (this.mapLevel >= 3) {
-            btnLoop.innerText = "LOOP (Restart Map 1)";
-        } else {
-            btnLoop.innerText = `NEXT MAP (Level ${this.mapLevel + 1})`;
+        // 敵の表示
+        const enemyContainer = document.getElementById('victory-enemies');
+        enemyContainer.innerHTML = '';
+
+        const enemyTypes = {
+            'slime': { color: '#00ff88', name: 'Slime' },
+            'lizard': { color: '#aa00ff', name: 'Lizard' },
+            'golem': { color: '#ff4444', name: 'Golem' },
+            'totem': { color: '#ff00ff', name: 'Totem' },
+            'kamikaze': { color: '#ffaa00', name: 'Kamikaze' },
+            'missile_enemy': { color: '#ff0088', name: 'Missile Bot' },
+            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' }
+        };
+
+        for (const [type, count] of Object.entries(this.killCount)) {
+            if (count <= 0) continue;
+            const data = enemyTypes[type] || { color: '#fff', name: 'Unknown' };
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'result-item-wrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            wrapper.style.margin = '5px';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 40;
+            canvas.height = 40;
+            canvas.className = 'result-item-icon';
+            const ctx = canvas.getContext('2d');
+            this.ui.drawEnemyIcon(ctx, type, data.color);
+
+            wrapper.appendChild(canvas);
+
+            const badge = document.createElement('div');
+            badge.innerText = `${count}`;
+            badge.className = 'result-count-badge';
+
+            wrapper.appendChild(badge);
+            enemyContainer.appendChild(wrapper);
+        }
+
+        // アイテムの表示
+        const itemContainer = document.getElementById('victory-items');
+        itemContainer.innerHTML = '';
+
+        const itemCounts = {};
+        this.acquiredRelics.forEach(r => {
+            if (!itemCounts[r.id]) itemCounts[r.id] = { count: 0, data: r };
+            itemCounts[r.id].count++;
+        });
+
+        for (const [id, info] of Object.entries(itemCounts)) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'result-item-wrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            wrapper.style.margin = '5px';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 40;
+            canvas.height = 40;
+            canvas.className = 'result-item-icon';
+            const ctx = canvas.getContext('2d');
+            this.ui.drawRelicIcon(ctx, id, 40, 40, info.data.color);
+
+            wrapper.appendChild(canvas);
+
+            const badge = document.createElement('div');
+            badge.innerText = `${info.count}`;
+            badge.className = 'result-count-badge';
+
+            wrapper.appendChild(badge);
+            itemContainer.appendChild(wrapper);
         }
     }
 
+    completeStage() {
+        // Deprecated - 互換性のために残す
+        this.showStageResult();
+    }
+
     gameOver() {
+        // お金を保存
+        const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
+        this.money += bonusMoney;
+        this.upgradeSystem.save();
+
         this.setState('gameover');
         this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel);
         // Reset map level on game over
         this.mapLevel = 1;
-        this.upgradeSystem.save();
     }
 }

@@ -919,14 +919,45 @@ class Obstacle {
         // Set visuals based on map level
         const mapLevel = game.mapLevel || 1;
         if (mapLevel === 1) {
-            this.color = '#00ff88'; // Green teal
+            // Stage 1: Green Forest
+            this.color = '#00ff88';
             this.type = 'tree';
         } else if (mapLevel === 2) {
-            this.color = '#ff8844'; // Orange rock
+            // Stage 2: Lava Zone
+            this.color = '#ff8844';
             this.type = 'rock';
-        } else {
-            this.color = '#ff00ff'; // Purple crystal
+        } else if (mapLevel === 3) {
+            // Stage 3: Void Realm
+            this.color = '#ff00ff';
             this.type = 'crystal';
+        } else if (mapLevel === 4) {
+            // Stage 4: Ice Cave
+            this.color = '#88ffff';
+            this.type = 'ice';
+        } else if (mapLevel === 5) {
+            // Stage 5: Desert Ruins
+            this.color = '#ffff88';
+            this.type = 'cactus';
+        } else if (mapLevel === 6) {
+            // Stage 6: Deep Ocean
+            this.color = '#4488ff';
+            this.type = 'coral';
+        } else if (mapLevel === 7) {
+            // Stage 7: Volcanic Core
+            this.color = '#ff4400';
+            this.type = 'lava_rock';
+        } else if (mapLevel === 8) {
+            // Stage 8: Storm Plains
+            this.color = '#aaaaff';
+            this.type = 'lightning';
+        } else if (mapLevel === 9) {
+            // Stage 9: Neon City
+            this.color = '#ff00ff';
+            this.type = 'neon';
+        } else {
+            // Stage 10: Chaos Dimension
+            this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            this.type = 'chaos';
         }
     }
 
@@ -996,6 +1027,145 @@ class Obstacle {
             ctx.lineTo(-this.radius * 0.3, 0);
             ctx.closePath();
             ctx.fill();
+        } else if (this.type === 'ice') {
+            // Ice Crystal: Six-pointed star
+            const sparkle = Math.sin(this.time * 3) * 0.1 + 0.9;
+            ctx.scale(sparkle, sparkle);
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI * 2) / 6;
+                const x1 = Math.cos(angle) * this.radius;
+                const y1 = Math.sin(angle) * this.radius;
+                const x2 = Math.cos(angle + Math.PI / 6) * (this.radius * 0.4);
+                const y2 = Math.sin(angle + Math.PI / 6) * (this.radius * 0.4);
+                if (i === 0) ctx.moveTo(x1, y1);
+                else ctx.lineTo(x1, y1);
+                ctx.lineTo(x2, y2);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        } else if (this.type === 'cactus') {
+            // Cactus: Main body + arms
+            ctx.fillStyle = this.color;
+            // Main body
+            ctx.fillRect(-8, -this.radius, 16, this.radius * 2);
+            // Left arm
+            ctx.fillRect(-this.radius * 0.6, -10, 10, 20);
+            // Right arm
+            ctx.fillRect(this.radius * 0.3, -5, 10, 15);
+            // Add spikes
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 8; i++) {
+                const y = -this.radius + (i / 8) * this.radius * 2;
+                ctx.beginPath();
+                ctx.moveTo(-10, y);
+                ctx.lineTo(-13, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(10, y);
+                ctx.lineTo(13, y);
+                ctx.stroke();
+            }
+        } else if (this.type === 'coral') {
+            // Coral: Branching structure
+            ctx.fillStyle = this.color;
+            const wave = Math.sin(this.time * 2) * 3;
+            // Main stem
+            ctx.fillRect(-4, 0, 8, this.radius);
+            // Branches
+            ctx.beginPath();
+            ctx.arc(-10 + wave, this.radius * 0.3, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(10 + wave, this.radius * 0.5, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-8 - wave, this.radius * 0.7, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        } else if (this.type === 'lava_rock') {
+            // Lava Rock: Jagged rock with glowing cracks
+            const pulse = Math.sin(this.time * 2) * 0.5 + 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -this.radius);
+            ctx.lineTo(this.radius * 0.9, -this.radius * 0.3);
+            ctx.lineTo(this.radius * 0.7, this.radius * 0.4);
+            ctx.lineTo(0, this.radius);
+            ctx.lineTo(-this.radius * 0.7, this.radius * 0.4);
+            ctx.lineTo(-this.radius * 0.9, -this.radius * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            // Glowing cracks
+            ctx.strokeStyle = `rgba(255, 200, 0, ${pulse})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, -this.radius);
+            ctx.lineTo(0, this.radius);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-this.radius * 0.5, 0);
+            ctx.lineTo(this.radius * 0.5, 0);
+            ctx.stroke();
+        } else if (this.type === 'lightning') {
+            // Lightning Pillar: Vertical jagged line with glow
+            const flicker = Math.random() > 0.8 ? 1.5 : 1;
+            ctx.shadowBlur = 20 * flicker;
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, -this.radius);
+            ctx.lineTo(5, -this.radius * 0.5);
+            ctx.lineTo(-5, 0);
+            ctx.lineTo(7, this.radius * 0.5);
+            ctx.lineTo(0, this.radius);
+            ctx.stroke();
+            // Core glow
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        } else if (this.type === 'neon') {
+            // Neon Pillar: Glowing box with grid
+            ctx.shadowBlur = 15;
+            ctx.fillRect(-this.radius * 0.4, -this.radius, this.radius * 0.8, this.radius * 2);
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-this.radius * 0.4, -this.radius, this.radius * 0.8, this.radius * 2);
+            // Horizontal lines
+            for (let i = 0; i < 3; i++) {
+                const y = -this.radius + (i + 1) * (this.radius * 2 / 4);
+                ctx.beginPath();
+                ctx.moveTo(-this.radius * 0.4, y);
+                ctx.lineTo(this.radius * 0.4, y);
+                ctx.stroke();
+            }
+        } else if (this.type === 'chaos') {
+            // Chaos Orb: Shifting random shape
+            const segments = 8;
+            const shift = Math.sin(this.time * 3);
+            ctx.beginPath();
+            for (let i = 0; i < segments; i++) {
+                const angle = (i / segments) * Math.PI * 2;
+                const r = this.radius * (0.7 + Math.sin(this.time * 2 + i) * 0.3);
+                const x = Math.cos(angle) * r;
+                const y = Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            // Rotating inner shapes
+            ctx.rotate(this.time);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius * (0.3 + i * 0.2), 0, Math.PI * 2);
+                ctx.stroke();
+            }
         }
 
         ctx.restore();
@@ -2600,6 +2770,8 @@ class NextStageAltar {
         this.radius = 40;
         this.active = true;
         this.pulse = 0;
+        this.activated = false;  // 今回の接触で既に反応したか
+        this.wasPlayerNear = false;  // 前フレームでプレイヤーが近くにいたか
     }
 
     update(dt) {
@@ -2609,10 +2781,20 @@ class NextStageAltar {
         const dx = this.game.player.x - this.x;
         const dy = this.game.player.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        const isNear = dist < this.radius + this.game.player.radius;
 
-        if (dist < this.radius + this.game.player.radius) {
-            this.game.nextStage();
+        // 近づいたタイミングで処理（連続発火を防ぐ）
+        if (isNear && !this.wasPlayerNear && !this.activated) {
+            this.game.showStageResult();  // 結果画面のみ表示
+            this.activated = true;
         }
+
+        // プレイヤーが離れたらリセット
+        if (!isNear) {
+            this.activated = false;
+        }
+
+        this.wasPlayerNear = isNear;
     }
 
     draw(ctx) {
@@ -3272,21 +3454,23 @@ class WaveManager {
             const mapDifficulty = this.game.mapLevel;
 
             // Adjust probabilities based on difficulty
-            // As difficulty rises, chance of weaker enemies decreases
-            const diffFactor = Math.min(0.5, (this.difficulty - 1.0) * 0.1); // Shift up to 0.5
+            const diffFactor = Math.min(0.5, (this.difficulty - 1.0) * 0.1);
 
-            // Unified Spawn Table (Map based)
+            // Stage-based spawn tables
             if (mapDifficulty === 1) {
+                // Stage 1: Green Forest
                 if (rand < 0.5 - diffFactor) enemyType = new Slime(this.game, x, y);
                 else if (rand < 0.8 - diffFactor / 2) enemyType = new Lizard(this.game, x, y);
                 else enemyType = new KamikazeEnemy(this.game, x, y);
             } else if (mapDifficulty === 2) {
+                // Stage 2: Lava Zone
                 if (rand < 0.3 - diffFactor) enemyType = new Slime(this.game, x, y);
                 else if (rand < 0.5 - diffFactor) enemyType = new Lizard(this.game, x, y);
                 else if (rand < 0.7 - diffFactor / 2) enemyType = new Golem(this.game, x, y);
                 else if (rand < 0.8) enemyType = new MissileEnemy(this.game, x, y);
                 else enemyType = new KamikazeEnemy(this.game, x, y);
-            } else {
+            } else if (mapDifficulty === 3) {
+                // Stage 3: Void Realm
                 if (rand < 0.2 - diffFactor) enemyType = new Slime(this.game, x, y);
                 else if (rand < 0.35 - diffFactor) enemyType = new Lizard(this.game, x, y);
                 else if (rand < 0.5 - diffFactor / 2) enemyType = new Golem(this.game, x, y);
@@ -3294,23 +3478,74 @@ class WaveManager {
                 else if (rand < 0.75) enemyType = new MissileEnemy(this.game, x, y);
                 else if (rand < 0.85) enemyType = new BeamEnemy(this.game, x, y);
                 else enemyType = new KamikazeEnemy(this.game, x, y);
+            } else if (mapDifficulty === 4) {
+                // Stage 4: Ice Cave
+                if (rand < 0.1 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.25 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.45) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.65) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.8) enemyType = new BeamEnemy(this.game, x, y);
+                else enemyType = new MissileEnemy(this.game, x, y);
+            } else if (mapDifficulty === 5) {
+                // Stage 5: Desert Ruins
+                if (rand < 0.15 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.35 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.50) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.7) enemyType = new MissileEnemy(this.game, x, y);
+                else if (rand < 0.85) enemyType = new KamikazeEnemy(this.game, x, y);
+                else enemyType = new Golem(this.game, x, y);
+            } else if (mapDifficulty === 6) {
+                // Stage 6: Deep Ocean
+                if (rand < 0.25 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.4 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.6) enemyType = new BeamEnemy(this.game, x, y);
+                else if (rand < 0.8) enemyType = new MissileEnemy(this.game, x, y);
+                else enemyType = new KamikazeEnemy(this.game, x, y);
+            } else if (mapDifficulty === 7) {
+                // Stage 7: Volcanic Core
+                if (rand < 0.15 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.35) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.5) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.7) enemyType = new BeamEnemy(this.game, x, y);
+                else if (rand < 0.85) enemyType = new KamikazeEnemy(this.game, x, y);
+                else enemyType = new MissileEnemy(this.game, x, y);
+            } else if (mapDifficulty === 8) {
+                // Stage 8: Storm Plains
+                if (rand < 0.1 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.2 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.35) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.5) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.65) enemyType = new MissileEnemy(this.game, x, y);
+                else if (rand < 0.8) enemyType = new BeamEnemy(this.game, x, y);
+                else enemyType = new KamikazeEnemy(this.game, x, y);
+            } else if (mapDifficulty === 9) {
+                // Stage 9: Neon City
+                if (rand < 0.15) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.3) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.5) enemyType = new MissileEnemy(this.game, x, y);
+                else if (rand < 0.7) enemyType = new BeamEnemy(this.game, x, y);
+                else if (rand < 0.85) enemyType = new KamikazeEnemy(this.game, x, y);
+                else enemyType = new Lizard(this.game, x, y);
+            } else {
+                // Stage 10: Chaos Dimension
+                const types = [Slime, Lizard, Golem, Totem, MissileEnemy, BeamEnemy, KamikazeEnemy];
+                const RandomEnemy = types[Math.floor(Math.random() * types.length)];
+                enemyType = new RandomEnemy(this.game, x, y);
             }
 
             // Apply Difficulty Scaling
-            // Time-based scaling
             enemyType.hp *= this.difficulty;
             enemyType.maxHp *= this.difficulty;
             enemyType.damage *= this.difficulty;
 
-            // Map Level Scaling (Stage 2 is harder than Stage 1)
-            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.15; // +15% per stage
+            // Map Level Scaling
+            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.15;
             enemyType.hp *= stageMultiplier;
             enemyType.maxHp *= stageMultiplier;
             enemyType.damage *= stageMultiplier;
 
             this.enemies.push(enemyType);
         }
-        // console.log('Enemies spawned:', spawnCount, 'Total:', this.enemies.length);
     }
 }
 
@@ -3428,8 +3663,40 @@ class UIManager {
                 <p>Bonus Money: <span id="result-money">0</span></p>
             </div>
             <div class="result-actions">
-                <button id="btn-loop" class="cyber-btn">LOOP (Next Map)</button>
-                <button id="btn-return" class="cyber-btn secondary">RETURN HOME</button>
+                <button id="btn-loop" class="cyber-btn">NEXT STAGE</button>
+                <button id="btn-return-home" class="cyber-btn" style="display:none;">RETURN HOME</button>
+                <button id="btn-cancel-result" class="cyber-btn secondary">CANCEL</button>
+            </div>
+        `);
+
+        // Victory Screen
+        this.screens.victory = this.createScreen('victory-screen', `
+            <div class="victory-container">
+                <h1 class="victory-title">🎉 VICTORY! 🎉</h1>
+                <h2 class="victory-subtitle">ALL STAGES COMPLETED!</h2>
+                <div class="result-stats-container">
+                    <div class="result-section">
+                        <h3>Total Ene Collected</h3>
+                        <p class="result-big-text"><span id="victory-ene">0</span></p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Money Earned</h3>
+                        <p class="result-big-text"><span id="victory-money">0</span></p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Stages Cleared</h3>
+                        <p class="result-big-text">10 / 10</p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Defeated Enemies</h3>
+                        <div id="victory-enemies" class="result-grid"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Acquired Items</h3>
+                        <div id="victory-items" class="result-grid"></div>
+                    </div>
+                </div>
+                <button id="btn-victory-home" class="cyber-btn">RETURN TO HOME</button>
             </div>
         `);
 
@@ -3544,8 +3811,12 @@ class UIManager {
         });
 
         // Result
-        this.bindButton('btn-loop', () => this.game.nextMap());
-        this.bindButton('btn-return', () => this.game.setState('home'));
+        this.bindButton('btn-loop', () => this.game.proceedToNextStage());
+        this.bindButton('btn-return-home', () => this.game.returnToHomeAfterVictory());
+        this.bindButton('btn-cancel-result', () => this.game.cancelStageTransition());
+
+        // Victory
+        this.bindButton('btn-victory-home', () => this.game.setState('home'));
 
         // Game Over
         this.bindButton('btn-go-home', () => this.game.setState('home'));
@@ -4194,6 +4465,14 @@ class Game {
             this.totalEneCollected = 0; // Reset total collected
         }
 
+        // Debug Mode: Super stats
+        if (this.debugMode) {
+            this.player.hp = 999999999;
+            this.player.maxHp = 999999999;
+            this.player.damage = 1000;
+            console.log('DEBUG MODE ACTIVE: Super HP and Damage enabled!');
+        }
+
         this.killCount = {}; // Track kills by type
 
         this.drops = [];
@@ -4492,9 +4771,10 @@ class Game {
     drawBackground() {
         // Map-specific background
         const mapLevel = this.mapLevel || 1;
+        const time = this.waveManager ? this.waveManager.time : 0;
 
         if (mapLevel === 1) {
-            // Green/Teal theme
+            // Stage 1: Green Forest
             const gradient = this.ctx.createRadialGradient(
                 this.worldWidth / 2, this.worldHeight / 2, 0,
                 this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
@@ -4504,15 +4784,15 @@ class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
 
-            // Particles (stars/sparkles)
+            // Sparkles
             this.ctx.fillStyle = 'rgba(0, 255, 136, 0.3)';
             for (let i = 0; i < 50; i++) {
-                const x = (i * 317 + this.waveManager.time * 10) % this.worldWidth;
-                const y = (i * 213 + this.waveManager.time * 5) % this.worldHeight;
+                const x = (i * 317 + time * 10) % this.worldWidth;
+                const y = (i * 213 + time * 5) % this.worldHeight;
                 this.ctx.fillRect(x, y, 2, 2);
             }
         } else if (mapLevel === 2) {
-            // Orange/Red theme
+            // Stage 2: Lava Zone
             const gradient = this.ctx.createRadialGradient(
                 this.worldWidth / 2, this.worldHeight / 2, 0,
                 this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
@@ -4522,15 +4802,15 @@ class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
 
-            // Rocky textures (rectangles)
+            // Rocky textures
             this.ctx.fillStyle = 'rgba(255, 136, 68, 0.2)';
             for (let i = 0; i < 20; i++) {
                 const x = (i * 457) % this.worldWidth;
                 const y = (i * 283) % this.worldHeight;
                 this.ctx.fillRect(x, y, 50, 30);
             }
-        } else {
-            // Purple/Pink theme
+        } else if (mapLevel === 3) {
+            // Stage 3: Void Realm
             const gradient = this.ctx.createRadialGradient(
                 this.worldWidth / 2, this.worldHeight / 2, 0,
                 this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
@@ -4540,13 +4820,181 @@ class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
 
-            // Glitch effects (random stripes)
-            const time = this.waveManager ? this.waveManager.time : 0;
+            // Glitch stripes
             this.ctx.fillStyle = 'rgba(255, 0, 255, 0.1)';
             for (let i = 0; i < 10; i++) {
                 const y = (i * 137 + time * 50) % this.worldHeight;
                 const h = 10 + Math.sin(time + i) * 5;
                 this.ctx.fillRect(0, y, this.worldWidth, h);
+            }
+        } else if (mapLevel === 4) {
+            // Stage 4: Ice Cave
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#0a1a2a');
+            gradient.addColorStop(1, '#050a15');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Ice crystals
+            this.ctx.fillStyle = 'rgba(136, 255, 255, 0.2)';
+            for (let i = 0; i < 30; i++) {
+                const x = (i * 241 + time * 3) % this.worldWidth;
+                const y = (i * 191 - time * 2) % this.worldHeight;
+                const size = 3 + Math.sin(time + i) * 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y - size);
+                this.ctx.lineTo(x + size, y + size);
+                this.ctx.lineTo(x - size, y + size);
+                this.ctx.fill();
+            }
+        } else if (mapLevel === 5) {
+            // Stage 5: Desert Ruins
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#2a2a0a');
+            gradient.addColorStop(1, '#151005');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Sand particles
+            this.ctx.fillStyle = 'rgba(255, 255, 136, 0.15)';
+            for (let i = 0; i < 40; i++) {
+                const x = (i * 373 + time * 30) % this.worldWidth;
+                const y = (i * 251 + Math.sin(time * 0.5 + i) * 100) % this.worldHeight;
+                this.ctx.fillRect(x, y, 1, 1);
+            }
+        } else if (mapLevel === 6) {
+            // Stage 6: Deep Ocean
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#0a151a');
+            gradient.addColorStop(1, '#020508');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Bubbles
+            this.ctx.fillStyle = 'rgba(136, 255, 255, 0.2)';
+            for (let i = 0; i < 25; i++) {
+                const x = (i * 311) % this.worldWidth;
+                const y = (this.worldHeight - (i * 197 + time * 40) % (this.worldHeight + 200));
+                const r = 2 + (i % 3);
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, r, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        } else if (mapLevel === 7) {
+            // Stage 7: Volcanic Core
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#3a1a0a');
+            gradient.addColorStop(1, '#1a0a05');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Lava flows
+            this.ctx.fillStyle = 'rgba(255, 100, 0, 0.2)';
+            for (let i = 0; i < 15; i++) {
+                const y = (i * 133 + time * 20) % this.worldHeight;
+                const w = 80 + Math.sin(time + i) * 40;
+                this.ctx.fillRect(0, y, w, 15);
+                this.ctx.fillRect(this.worldWidth - w, y, w, 15);
+            }
+        } else if (mapLevel === 8) {
+            // Stage 8: Storm Plains
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#1a1a2a');
+            gradient.addColorStop(1, '#0a0a15');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Lightning
+            if (Math.floor(time * 3) % 5 === 0) {
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                this.ctx.lineWidth = 3;
+                for (let i = 0; i < 3; i++) {
+                    const x = (i * 700) % this.worldWidth;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x + 50, 300);
+                    this.ctx.lineTo(x, 600);
+                    this.ctx.lineTo(x + 30, 1000);
+                    this.ctx.lineTo(x, this.worldHeight);
+                    this.ctx.stroke();
+                }
+            }
+        } else if (mapLevel === 9) {
+            // Stage 9: Neon City
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            gradient.addColorStop(0, '#1a0a1a');
+            gradient.addColorStop(1, '#0a050a');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Neon grid
+            this.ctx.strokeStyle = 'rgba(255, 0, 255, 0.1)';
+            this.ctx.lineWidth = 1;
+            const gridSize = 50;
+            for (let x = 0; x < this.worldWidth; x += gridSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, 0);
+                this.ctx.lineTo(x, this.worldHeight);
+                this.ctx.stroke();
+            }
+            for (let y = 0; y < this.worldHeight; y += gridSize) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, y);
+                this.ctx.lineTo(this.worldWidth, y);
+                this.ctx.stroke();
+            }
+
+            // Scanlines
+            this.ctx.fillStyle = 'rgba(0, 255, 255, 0.05)';
+            for (let i = 0; i < 20; i++) {
+                const y = (i * 100 + time * 80) % this.worldHeight;
+                this.ctx.fillRect(0, y, this.worldWidth, 2);
+            }
+        } else {
+            // Stage 10: Chaos Dimension
+            const gradient = this.ctx.createRadialGradient(
+                this.worldWidth / 2, this.worldHeight / 2, 0,
+                this.worldWidth / 2, this.worldHeight / 2, this.worldWidth
+            );
+            const hue1 = (time * 50) % 360;
+            const hue2 = (time * 50 + 180) % 360;
+            gradient.addColorStop(0, `hsl(${hue1}, 50%, 15%)`);
+            gradient.addColorStop(1, `hsl(${hue2}, 50%, 5%)`);
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.worldWidth, this.worldHeight);
+
+            // Random shapes
+            for (let i = 0; i < 20; i++) {
+                const hue = (time * 100 + i * 36) % 360;
+                this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, 0.1)`;
+                const x = (i * 317 + time * 50) % this.worldWidth;
+                const y = (i * 241 + time * 30) % this.worldHeight;
+                const size = 20 + Math.sin(time + i) * 15;
+                if (i % 3 === 0) {
+                    this.ctx.fillRect(x, y, size, size);
+                } else {
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
             }
         }
     }
@@ -4587,8 +5035,8 @@ class Game {
     }
 
     nextMap() {
-        // Loop back to stage 1 after stage 3
-        if (this.mapLevel >= 3) {
+        // Loop back to stage 1 after stage 10
+        if (this.mapLevel >= 10) {
             this.mapLevel = 1;
         } else {
             this.mapLevel++;
@@ -4616,35 +5064,155 @@ class Game {
         this.ui.showMessage("BOSS DEFEATED! GO TO THE ALTAR!", 5000);
     }
 
+
     nextStage() {
-        // Called by Altar
-        this.completeStage();
+        // Deprecated - 互換性のために残す
+        this.showStageResult();
     }
 
-    completeStage() {
-        this.nextStageAltar = null;
+    showStageResult() {
+        // 台座に触れた時に呼ばれる - 結果画面のみ表示
         this.setState('result');
+
+        // Eneとボーナスマネーを表示（まだ保存しない）
+        const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
+        document.getElementById('result-ene').innerText = this.ene;
+        document.getElementById('result-money').innerText = bonusMoney;
+
+        // ボタンテキストを設定
+        const btnLoop = document.getElementById('btn-loop');
+        const btnReturnHome = document.getElementById('btn-return-home');
+
+        if (this.mapLevel >= 10) {
+            btnLoop.innerText = "NEXT STAGE (Loop to Stage 1)";
+            btnReturnHome.style.display = 'inline-block';  // ステージ10のみ表示
+        } else {
+            btnLoop.innerText = `NEXT STAGE (Stage ${this.mapLevel + 1})`;
+            btnReturnHome.style.display = 'none';  // 非表示
+        }
+    }
+
+    cancelStageTransition() {
+        // CANCELボタン押下時 - ゲームプレイに戻る
+        this.setState('playing');
+        // 台座はそのまま残る
+    }
+
+    proceedToNextStage() {
+        // NEXT STAGEボタン押下時 - 次のマップへ
+        // 台座を削除
+        this.nextStageAltar = null;
+
+        // 次のマップへ（お金は保存しない）
+        this.nextMap();
+    }
+
+    returnToHomeAfterVictory() {
+        // ステージ10クリア後、RETURN HOMEボタン押下時
+        // 台座を削除
+        this.nextStageAltar = null;
+
+        // お金を保存
         const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
         this.money += bonusMoney;
         this.upgradeSystem.save();
 
-        document.getElementById('result-ene').innerText = this.ene;
-        document.getElementById('result-money').innerText = bonusMoney;
+        // 勝利画面を表示
+        this.setState('victory');
+        document.getElementById('victory-ene').innerText = this.totalEneCollected;
+        document.getElementById('victory-money').innerText = bonusMoney;
 
-        const btnLoop = document.getElementById('btn-loop');
-        if (this.mapLevel >= 3) {
-            btnLoop.innerText = "LOOP (Restart Map 1)";
-        } else {
-            btnLoop.innerText = `NEXT MAP (Level ${this.mapLevel + 1})`;
+        // 敵の表示
+        const enemyContainer = document.getElementById('victory-enemies');
+        enemyContainer.innerHTML = '';
+
+        const enemyTypes = {
+            'slime': { color: '#00ff88', name: 'Slime' },
+            'lizard': { color: '#aa00ff', name: 'Lizard' },
+            'golem': { color: '#ff4444', name: 'Golem' },
+            'totem': { color: '#ff00ff', name: 'Totem' },
+            'kamikaze': { color: '#ffaa00', name: 'Kamikaze' },
+            'missile_enemy': { color: '#ff0088', name: 'Missile Bot' },
+            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' }
+        };
+
+        for (const [type, count] of Object.entries(this.killCount)) {
+            if (count <= 0) continue;
+            const data = enemyTypes[type] || { color: '#fff', name: 'Unknown' };
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'result-item-wrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            wrapper.style.margin = '5px';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 40;
+            canvas.height = 40;
+            canvas.className = 'result-item-icon';
+            const ctx = canvas.getContext('2d');
+            this.ui.drawEnemyIcon(ctx, type, data.color);
+
+            wrapper.appendChild(canvas);
+
+            const badge = document.createElement('div');
+            badge.innerText = `${count}`;
+            badge.className = 'result-count-badge';
+
+            wrapper.appendChild(badge);
+            enemyContainer.appendChild(wrapper);
+        }
+
+        // アイテムの表示
+        const itemContainer = document.getElementById('victory-items');
+        itemContainer.innerHTML = '';
+
+        const itemCounts = {};
+        this.acquiredRelics.forEach(r => {
+            if (!itemCounts[r.id]) itemCounts[r.id] = { count: 0, data: r };
+            itemCounts[r.id].count++;
+        });
+
+        for (const [id, info] of Object.entries(itemCounts)) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'result-item-wrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            wrapper.style.margin = '5px';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 40;
+            canvas.height = 40;
+            canvas.className = 'result-item-icon';
+            const ctx = canvas.getContext('2d');
+            this.ui.drawRelicIcon(ctx, id, 40, 40, info.data.color);
+
+            wrapper.appendChild(canvas);
+
+            const badge = document.createElement('div');
+            badge.innerText = `${info.count}`;
+            badge.className = 'result-count-badge';
+
+            wrapper.appendChild(badge);
+            itemContainer.appendChild(wrapper);
         }
     }
 
+    completeStage() {
+        // Deprecated - 互換性のために残す
+        this.showStageResult();
+    }
+
     gameOver() {
+        // お金を保存
+        const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
+        this.money += bonusMoney;
+        this.upgradeSystem.save();
+
         this.setState('gameover');
         this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel);
         // Reset map level on game over
         this.mapLevel = 1;
-        this.upgradeSystem.save();
     }
 }
 

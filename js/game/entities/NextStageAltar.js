@@ -6,6 +6,8 @@ export class NextStageAltar {
         this.radius = 40;
         this.active = true;
         this.pulse = 0;
+        this.activated = false;  // 今回の接触で既に反応したか
+        this.wasPlayerNear = false;  // 前フレームでプレイヤーが近くにいたか
     }
 
     update(dt) {
@@ -15,10 +17,20 @@ export class NextStageAltar {
         const dx = this.game.player.x - this.x;
         const dy = this.game.player.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        const isNear = dist < this.radius + this.game.player.radius;
 
-        if (dist < this.radius + this.game.player.radius) {
-            this.game.nextStage();
+        // 近づいたタイミングで処理（連続発火を防ぐ）
+        if (isNear && !this.wasPlayerNear && !this.activated) {
+            this.game.showStageResult();  // 結果画面のみ表示
+            this.activated = true;
         }
+
+        // プレイヤーが離れたらリセット
+        if (!isNear) {
+            this.activated = false;
+        }
+
+        this.wasPlayerNear = isNear;
     }
 
     draw(ctx) {

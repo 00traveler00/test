@@ -144,21 +144,23 @@ export class WaveManager {
             const mapDifficulty = this.game.mapLevel;
 
             // Adjust probabilities based on difficulty
-            // As difficulty rises, chance of weaker enemies decreases
-            const diffFactor = Math.min(0.5, (this.difficulty - 1.0) * 0.1); // Shift up to 0.5
+            const diffFactor = Math.min(0.5, (this.difficulty - 1.0) * 0.1);
 
-            // Unified Spawn Table (Map based)
+            // Stage-based spawn tables
             if (mapDifficulty === 1) {
+                // Stage 1: Green Forest
                 if (rand < 0.5 - diffFactor) enemyType = new Slime(this.game, x, y);
                 else if (rand < 0.8 - diffFactor / 2) enemyType = new Lizard(this.game, x, y);
                 else enemyType = new KamikazeEnemy(this.game, x, y);
             } else if (mapDifficulty === 2) {
+                // Stage 2: Lava Zone
                 if (rand < 0.3 - diffFactor) enemyType = new Slime(this.game, x, y);
                 else if (rand < 0.5 - diffFactor) enemyType = new Lizard(this.game, x, y);
                 else if (rand < 0.7 - diffFactor / 2) enemyType = new Golem(this.game, x, y);
                 else if (rand < 0.8) enemyType = new MissileEnemy(this.game, x, y);
                 else enemyType = new KamikazeEnemy(this.game, x, y);
-            } else {
+            } else if (mapDifficulty === 3) {
+                // Stage 3: Void Realm
                 if (rand < 0.2 - diffFactor) enemyType = new Slime(this.game, x, y);
                 else if (rand < 0.35 - diffFactor) enemyType = new Lizard(this.game, x, y);
                 else if (rand < 0.5 - diffFactor / 2) enemyType = new Golem(this.game, x, y);
@@ -166,22 +168,73 @@ export class WaveManager {
                 else if (rand < 0.75) enemyType = new MissileEnemy(this.game, x, y);
                 else if (rand < 0.85) enemyType = new BeamEnemy(this.game, x, y);
                 else enemyType = new KamikazeEnemy(this.game, x, y);
+            } else if (mapDifficulty === 4) {
+                // Stage 4: Ice Cave
+                if (rand < 0.1 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.25 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.45) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.65) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.8) enemyType = new BeamEnemy(this.game, x, y);
+                else enemyType = new MissileEnemy(this.game, x, y);
+            } else if (mapDifficulty === 5) {
+                // Stage 5: Desert Ruins
+                if (rand < 0.15 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.35 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.50) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.7) enemyType = new MissileEnemy(this.game, x, y);
+                else if (rand < 0.85) enemyType = new KamikazeEnemy(this.game, x, y);
+                else enemyType = new Golem(this.game, x, y);
+            } else if (mapDifficulty === 6) {
+                // Stage 6: Deep Ocean
+                if (rand < 0.25 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.4 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.6) enemyType = new BeamEnemy(this.game, x, y);
+                else if (rand < 0.8) enemyType = new MissileEnemy(this.game, x, y);
+                else enemyType = new KamikazeEnemy(this.game, x, y);
+            } else if (mapDifficulty === 7) {
+                // Stage 7: Volcanic Core
+                if (rand < 0.15 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.35) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.5) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.7) enemyType = new BeamEnemy(this.game, x, y);
+                else if (rand < 0.85) enemyType = new KamikazeEnemy(this.game, x, y);
+                else enemyType = new MissileEnemy(this.game, x, y);
+            } else if (mapDifficulty === 8) {
+                // Stage 8: Storm Plains
+                if (rand < 0.1 - diffFactor) enemyType = new Slime(this.game, x, y);
+                else if (rand < 0.2 - diffFactor) enemyType = new Lizard(this.game, x, y);
+                else if (rand < 0.35) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.5) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.65) enemyType = new MissileEnemy(this.game, x, y);
+                else if (rand < 0.8) enemyType = new BeamEnemy(this.game, x, y);
+                else enemyType = new KamikazeEnemy(this.game, x, y);
+            } else if (mapDifficulty === 9) {
+                // Stage 9: Neon City
+                if (rand < 0.15) enemyType = new Golem(this.game, x, y);
+                else if (rand < 0.3) enemyType = new Totem(this.game, x, y);
+                else if (rand < 0.5) enemyType = new MissileEnemy(this.game, x, y);
+                else if (rand < 0.7) enemyType = new BeamEnemy(this.game, x, y);
+                else if (rand < 0.85) enemyType = new KamikazeEnemy(this.game, x, y);
+                else enemyType = new Lizard(this.game, x, y);
+            } else {
+                // Stage 10: Chaos Dimension
+                const types = [Slime, Lizard, Golem, Totem, MissileEnemy, BeamEnemy, KamikazeEnemy];
+                const RandomEnemy = types[Math.floor(Math.random() * types.length)];
+                enemyType = new RandomEnemy(this.game, x, y);
             }
 
             // Apply Difficulty Scaling
-            // Time-based scaling
             enemyType.hp *= this.difficulty;
             enemyType.maxHp *= this.difficulty;
             enemyType.damage *= this.difficulty;
 
-            // Map Level Scaling (Stage 2 is harder than Stage 1)
-            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.15; // +15% per stage
+            // Map Level Scaling
+            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.15;
             enemyType.hp *= stageMultiplier;
             enemyType.maxHp *= stageMultiplier;
             enemyType.damage *= stageMultiplier;
 
             this.enemies.push(enemyType);
         }
-        // console.log('Enemies spawned:', spawnCount, 'Total:', this.enemies.length);
     }
 }

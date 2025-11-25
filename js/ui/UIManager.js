@@ -110,8 +110,40 @@ export class UIManager {
                 <p>Bonus Money: <span id="result-money">0</span></p>
             </div>
             <div class="result-actions">
-                <button id="btn-loop" class="cyber-btn">LOOP (Next Map)</button>
-                <button id="btn-return" class="cyber-btn secondary">RETURN HOME</button>
+                <button id="btn-loop" class="cyber-btn">NEXT STAGE</button>
+                <button id="btn-return-home" class="cyber-btn" style="display:none;">RETURN HOME</button>
+                <button id="btn-cancel-result" class="cyber-btn secondary">CANCEL</button>
+            </div>
+        `);
+
+        // Victory Screen
+        this.screens.victory = this.createScreen('victory-screen', `
+            <div class="victory-container">
+                <h1 class="victory-title">🎉 VICTORY! 🎉</h1>
+                <h2 class="victory-subtitle">ALL STAGES COMPLETED!</h2>
+                <div class="result-stats-container">
+                    <div class="result-section">
+                        <h3>Total Ene Collected</h3>
+                        <p class="result-big-text"><span id="victory-ene">0</span></p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Money Earned</h3>
+                        <p class="result-big-text"><span id="victory-money">0</span></p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Stages Cleared</h3>
+                        <p class="result-big-text">10 / 10</p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Defeated Enemies</h3>
+                        <div id="victory-enemies" class="result-grid"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Acquired Items</h3>
+                        <div id="victory-items" class="result-grid"></div>
+                    </div>
+                </div>
+                <button id="btn-victory-home" class="cyber-btn">RETURN TO HOME</button>
             </div>
         `);
 
@@ -226,8 +258,12 @@ export class UIManager {
         });
 
         // Result
-        this.bindButton('btn-loop', () => this.game.nextMap());
-        this.bindButton('btn-return', () => this.game.setState('home'));
+        this.bindButton('btn-loop', () => this.game.proceedToNextStage());
+        this.bindButton('btn-return-home', () => this.game.returnToHomeAfterVictory());
+        this.bindButton('btn-cancel-result', () => this.game.cancelStageTransition());
+
+        // Victory
+        this.bindButton('btn-victory-home', () => this.game.setState('home'));
 
         // Game Over
         this.bindButton('btn-go-home', () => this.game.setState('home'));
