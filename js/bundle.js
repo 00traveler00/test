@@ -774,7 +774,11 @@ class Drop {
             this.markedForDeletion = true;
             if (this.type === 'energy') {
                 const multiplier = this.game.debugMode ? 100 : 1;
-                this.game.ene += Math.ceil(this.value * multiplier);
+                const val = Math.ceil(this.value * multiplier);
+                this.game.ene += val;
+                if (this.game.totalEneCollected !== undefined) {
+                    this.game.totalEneCollected += val;
+                }
                 this.game.audio.playCollect(); // Sound effect
             }
             // console.log("Collected " + this.type, "Value:", this.value);
@@ -2953,8 +2957,20 @@ class UIManager {
         });
     }
 
-    updateGameOverStats(ene, killCount, relics) {
+    updateGameOverStats(ene, killCount, relics, mapLevel) {
         document.getElementById('go-ene').innerText = ene;
+
+        // Display Map Level (Create element if not exists)
+        let levelDisplay = document.getElementById('go-level');
+        if (!levelDisplay) {
+            const container = document.querySelector('.result-stats-container');
+            const section = document.createElement('div');
+            section.className = 'result-section';
+            section.innerHTML = `<h3>Reached Stage</h3><p class="result-big-text"><span id="go-level">1</span></p>`;
+            container.insertBefore(section, container.firstChild);
+            levelDisplay = document.getElementById('go-level');
+        }
+        levelDisplay.innerText = mapLevel;
 
         // Enemies
         const enemyContainer = document.getElementById('go-enemies');
@@ -3111,6 +3127,7 @@ class UIManager {
 
 
 
+
 class Game {
     constructor(canvas) {
         this.canvas = canvas;
@@ -3138,7 +3155,6 @@ class Game {
         this.state = 'title'; // title, home, playing, reward, result
         this.money = 0;
         this.ene = 0;
-        this.mapLevel = 1;
         this.mapLevel = 1;
         this.selectedCharacter = 'girl';
         this.debugMode = false;
@@ -3227,6 +3243,7 @@ class Game {
         } else {
             this.acquiredRelics = [];
             this.ene = 0;
+            this.totalEneCollected = 0; // Reset total collected
         }
 
         this.killCount = {}; // Track kills by type
@@ -3478,8 +3495,6 @@ class Game {
         this.setState('playing');
     }
 
-
-
     draw() {
         // Clear screen
         this.ctx.fillStyle = '#101018';
@@ -3665,7 +3680,7 @@ class Game {
 
     gameOver() {
         this.setState('gameover');
-        this.ui.updateGameOverStats(this.ene, this.killCount, this.acquiredRelics);
+        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel);
         // Reset map level on game over
         this.mapLevel = 1;
         this.upgradeSystem.save();

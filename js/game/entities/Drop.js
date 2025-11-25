@@ -29,7 +29,11 @@ export class Drop {
             this.markedForDeletion = true;
             if (this.type === 'energy') {
                 const multiplier = this.game.debugMode ? 100 : 1;
-                this.game.ene += Math.ceil(this.value * multiplier);
+                const val = Math.ceil(this.value * multiplier);
+                this.game.ene += val;
+                if (this.game.totalEneCollected !== undefined) {
+                    this.game.totalEneCollected += val;
+                }
                 this.game.audio.playCollect(); // Sound effect
             }
             // console.log("Collected " + this.type, "Value:", this.value);

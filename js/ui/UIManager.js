@@ -579,8 +579,20 @@ export class UIManager {
         });
     }
 
-    updateGameOverStats(ene, killCount, relics) {
+    updateGameOverStats(ene, killCount, relics, mapLevel) {
         document.getElementById('go-ene').innerText = ene;
+
+        // Display Map Level (Create element if not exists)
+        let levelDisplay = document.getElementById('go-level');
+        if (!levelDisplay) {
+            const container = document.querySelector('.result-stats-container');
+            const section = document.createElement('div');
+            section.className = 'result-section';
+            section.innerHTML = `<h3>Reached Stage</h3><p class="result-big-text"><span id="go-level">1</span></p>`;
+            container.insertBefore(section, container.firstChild);
+            levelDisplay = document.getElementById('go-level');
+        }
+        levelDisplay.innerText = mapLevel;
 
         // Enemies
         const enemyContainer = document.getElementById('go-enemies');

@@ -13,6 +13,7 @@ import { Minimap } from './ui/Minimap.js';
 import { Particle } from './entities/Particle.js';
 import { Drone } from './entities/Drone.js';
 import { NextStageAltar } from './entities/NextStageAltar.js';
+
 export class Game {
     constructor(canvas) {
         this.canvas = canvas;
@@ -40,7 +41,6 @@ export class Game {
         this.state = 'title'; // title, home, playing, reward, result
         this.money = 0;
         this.ene = 0;
-        this.mapLevel = 1;
         this.mapLevel = 1;
         this.selectedCharacter = 'girl';
         this.debugMode = false;
@@ -129,6 +129,7 @@ export class Game {
         } else {
             this.acquiredRelics = [];
             this.ene = 0;
+            this.totalEneCollected = 0; // Reset total collected
         }
 
         this.killCount = {}; // Track kills by type
@@ -380,8 +381,6 @@ export class Game {
         this.setState('playing');
     }
 
-
-
     draw() {
         // Clear screen
         this.ctx.fillStyle = '#101018';
@@ -567,7 +566,7 @@ export class Game {
 
     gameOver() {
         this.setState('gameover');
-        this.ui.updateGameOverStats(this.ene, this.killCount, this.acquiredRelics);
+        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel);
         // Reset map level on game over
         this.mapLevel = 1;
         this.upgradeSystem.save();
