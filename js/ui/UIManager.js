@@ -86,12 +86,12 @@ export class UIManager {
                     </div>
                 </div>
                 <div class="hud-center">
+                    <!-- Center is now empty or can be used for other things -->
+                </div>
+                <div class="hud-right">
                     <div class="score-container">
                         Ene: <span id="score-ene">0</span>
                     </div>
-                </div>
-                <div class="hud-right">
-                    <!-- Reserved for Minimap space -->
                 </div>
             </div>
             <div id="acquired-items-container" class="acquired-items">
