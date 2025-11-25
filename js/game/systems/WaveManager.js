@@ -1,6 +1,7 @@
 import { Slime, Golem, Lizard, Totem, KamikazeEnemy, MissileEnemy, BeamEnemy } from '../entities/Enemy.js';
 import { BossAltar } from '../entities/BossAltar.js';
 import { Chest } from '../entities/Chest.js';
+import { Overlord, SlimeKing, MechaGolem, VoidPhantom, CrimsonDragon } from '../entities/Boss.js';
 
 export class WaveManager {
     constructor(game, initialDifficulty = 1.0) {
@@ -40,36 +41,27 @@ export class WaveManager {
         this.bossActive = true;
         this.bossAltar = null; // Remove altar
 
-        // Select boss type based on map level
-        let boss;
+        // Randomly select a boss type
+        const bosses = [Overlord, SlimeKing, MechaGolem, VoidPhantom, CrimsonDragon];
+        const BossClass = bosses[Math.floor(Math.random() * bosses.length)];
+
+        // Spawn the new Boss entity
+        const boss = new BossClass(this.game, this.game.player.x, this.game.player.y - 300);
+
+        // Scale Boss stats
+        boss.hp *= this.difficulty;
+        boss.maxHp *= this.difficulty;
+        boss.damage *= this.difficulty;
+
+        // Map Level Scaling (Make later bosses even tougher)
         const mapLevel = this.game.mapLevel || 1;
+        boss.hp *= (1 + (mapLevel - 1) * 0.5);
+        boss.maxHp = boss.hp;
 
-        if (mapLevel === 1) {
-            // Map 1: Giant Slime
-            boss = new Slime(this.game, this.game.player.x, this.game.player.y - 300);
-        } else if (mapLevel === 2) {
-            // Map 2: Giant Golem
-            boss = new Golem(this.game, this.game.player.x, this.game.player.y - 300);
-        } else {
-            // Map 3+: Giant Lizard or Totem
-            if (Math.random() < 0.5) {
-                boss = new Lizard(this.game, this.game.player.x, this.game.player.y - 300);
-            } else {
-                boss = new Totem(this.game, this.game.player.x, this.game.player.y - 300);
-            }
-        }
-
-        // Boss stats
-        boss.radius = 100;
-        boss.hp = 500 * this.difficulty;
-        boss.maxHp = 500 * this.difficulty;
-        boss.speed = Math.max(20, boss.speed * 0.5); // Slower than normal
-        boss.damage = 30 * this.difficulty;
-        boss.isBoss = true;
         this.enemies.push(boss);
 
         this.game.audio.playBossSummon(); // Sound effect
-        console.log(`BOSS SUMMONED: ${boss.type.toUpperCase()}`);
+        console.log(`BOSS SUMMONED! Type: ${boss.type}, HP: ${boss.hp}`);
     }
 
     stopSpawning() {

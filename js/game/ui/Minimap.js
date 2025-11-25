@@ -84,6 +84,21 @@ export class Minimap {
             this.ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
             this.ctx.fill();
             this.ctx.shadowBlur = 0;
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+        }
+
+        // Draw Next Stage Altar
+        if (this.game.nextStageAltar) {
+            const altar = this.game.nextStageAltar;
+            const pos = this.worldToMinimap(altar.x, altar.y);
+            this.ctx.fillStyle = '#00ff00'; // Green
+            this.ctx.shadowBlur = 5;
+            this.ctx.shadowColor = '#00ff00';
+            this.ctx.beginPath();
+            this.ctx.rect(pos.x - 3, pos.y - 3, 6, 6);
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
         }
 
         // Draw player (always on top)

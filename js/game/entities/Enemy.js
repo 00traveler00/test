@@ -32,6 +32,11 @@ export class Enemy {
         }
     }
 
+    takeDamage(amount) {
+        this.hp -= amount;
+        return true;
+    }
+
     draw(ctx) {
         // Draw Neon Shape
         ctx.save();

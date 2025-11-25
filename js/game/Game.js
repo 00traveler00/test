@@ -295,26 +295,31 @@ export class Game {
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (dist < enemy.radius + proj.radius) {
-                    enemy.hp -= proj.damage;
-                    this.showDamage(enemy.x, enemy.y, Math.round(proj.damage), '#fff');
-                    this.audio.playHit(); // Sound effect
+                    // Check if damage is taken
+                    if (enemy.takeDamage(proj.damage)) {
+                        this.showDamage(enemy.x, enemy.y, Math.round(proj.damage), '#fff');
+                        this.audio.playHit(); // Sound effect
+
+                        // Spawn Particles
+                        for (let i = 0; i < 5; i++) {
+                            this.particles.push(new Particle(this, enemy.x, enemy.y, enemy.color));
+                        }
+
+                        if (enemy.hp <= 0) {
+                            enemy.markedForDeletion = true;
+                            // Drop Scaling: Value based on Max HP
+                            const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10));
+                            this.drops.push(new Drop(this, enemy.x, enemy.y, 'energy', dropValue));
+
+                            // Track Kill
+                            if (!this.killCount[enemy.type]) this.killCount[enemy.type] = 0;
+                            this.killCount[enemy.type]++;
+                        }
+                    } else {
+                        // Damage Blocked (Sound effect?)
+                        this.audio.playHit(); // Maybe a different sound for block?
+                    }
                     proj.markedForDeletion = true;
-
-                    // Spawn Particles
-                    for (let i = 0; i < 5; i++) {
-                        this.particles.push(new Particle(this, enemy.x, enemy.y, enemy.color));
-                    }
-
-                    if (enemy.hp <= 0) {
-                        enemy.markedForDeletion = true;
-                        // Drop Scaling: Value based on Max HP
-                        const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10));
-                        this.drops.push(new Drop(this, enemy.x, enemy.y, 'energy', dropValue));
-
-                        // Track Kill
-                        if (!this.killCount[enemy.type]) this.killCount[enemy.type] = 0;
-                        this.killCount[enemy.type]++;
-                    }
                 }
             });
         });
