@@ -76,9 +76,14 @@ export class UIManager {
         this.screens.hud = this.createScreen('hud-screen', `
             <div class="hud-top">
                 <div class="hud-left">
-                    <div class="bar-container">
-                        <div id="hp-bar" class="bar hp"></div>
-                        <span id="hp-text" class="bar-text">100/100</span>
+                    <div class="hud-hp-ene-row">
+                        <div class="bar-container">
+                            <div id="hp-bar" class="bar hp"></div>
+                            <span id="hp-text" class="bar-text">100/100</span>
+                        </div>
+                        <div class="score-container">
+                            Ene: <span id="score-ene">0</span>
+                        </div>
                     </div>
                     <div class="time-container">
                         <span id="game-time">00:00</span>
@@ -89,9 +94,7 @@ export class UIManager {
                     <!-- Center is now empty or can be used for other things -->
                 </div>
                 <div class="hud-right">
-                    <div class="score-container">
-                        Ene: <span id="score-ene">0</span>
-                    </div>
+                    <!-- Minimap will be positioned here via absolute positioning -->
                 </div>
             </div>
             <div id="acquired-items-container" class="acquired-items">

@@ -201,8 +201,15 @@ h2 {
     text-align: center;
 }
 
+.hud-hp-ene-row {
+    display: flex;
+    align-items: center;
+    gap: 2vw;
+    flex-wrap: nowrap;
+}
+
 .bar-container {
-    width: min(40vw, 220px);
+    width: min(35vw, 200px);
     height: min(3vh, 25px);
     background: #222;
     border: 2px solid #00ff00;
@@ -210,6 +217,7 @@ h2 {
     overflow: hidden;
     position: relative;
     box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    flex-shrink: 0;
 }
 
 .bar-text {
@@ -219,7 +227,7 @@ h2 {
     top: 50%;
     left: 0;
     transform: translateY(-50%);
-    font-size: min(4vw, 16px) !important;
+    font-size: min(3.5vw, 14px) !important;
     text-shadow: 1px 1px 1px #000;
     font-weight: bold;
     letter-spacing: 1px;
@@ -234,15 +242,13 @@ h2 {
 }
 
 .score-container {
-    font-size: min(6vw, 2rem);
+    font-size: min(4vw, 1.1rem);
     color: #00ffff;
     text-shadow: 0 0 10px #00ffff;
     font-weight: bold;
-    letter-spacing: 2px;
-    margin-top: min(22vw, 160px);
-    /* Push below minimap (20vw + gap) */
-    margin-right: 1vw;
-    text-align: right;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .time-container {
@@ -545,7 +551,7 @@ h2 {
 
     .hud-left {
         order: 1;
-        width: 50%;
+        width: 100%;
     }
 
     .hud-right {
@@ -568,11 +574,16 @@ h2 {
         gap: 3vw;
     }
 
+    .hud-hp-ene-row {
+        flex-wrap: wrap;
+    }
+
+    .bar-container {
+        width: min(55vw, 250px);
+    }
+
     .score-container {
-        margin-top: 0;
-        font-size: min(8vw, 1.5rem);
-        text-align: center;
-        margin-right: 0;
+        font-size: min(5vw, 1rem);
     }
 
     .acquired-item-icon {
