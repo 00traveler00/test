@@ -15,8 +15,10 @@ export class Player {
         this.initCharacter(this.game.selectedCharacter);
 
         // Relic Stats
-        this.hasMissileLauncher = false;
+        this.missileCount = 0; // Number of missile launchers acquired
         this.missileTimer = 0;
+        this.missileQueue = 0; // Number of missiles waiting to fire
+        this.missileBurstTimer = 0; // Timer for burst firing
     }
 
     initCharacter(charType) {
@@ -78,9 +80,7 @@ export class Player {
         this.shootTimer += dt;
         if (this.shootTimer >= this.shootInterval) {
             const target = this.findNearestEnemy();
-            // console.log('Finding target...', target); // DEBUG
             if (target) {
-                // console.log('Shooting at enemy!', target.type); // DEBUG
                 this.shoot(target);
                 this.shootTimer = 0;
             }
@@ -90,15 +90,33 @@ export class Player {
         this.projectiles.forEach(p => p.update(dt));
         this.projectiles = this.projectiles.filter(p => !p.markedForDeletion);
 
-        // Missile Launcher Logic
-        if (this.hasMissileLauncher) {
+        // Missile Launcher Logic - Fire missiles sequentially
+        if (this.missileCount > 0) {
             this.missileTimer += dt;
-            if (this.missileTimer >= 1.5) { // Fire every 1.5s
+
+            // Queue missiles to fire
+            if (this.missileTimer >= 1.5 && this.missileQueue === 0) {
                 const target = this.findNearestEnemy();
                 if (target) {
-                    this.projectiles.push(new Missile(this.game, this.x, this.y, target));
+                    this.missileQueue = this.missileCount; // Queue all missiles
+                    this.missileBurstTimer = 0;
                     this.missileTimer = 0;
-                    // Optional: Add specific missile sound here if available
+                }
+            }
+
+            // Fire missiles from queue sequentially
+            if (this.missileQueue > 0) {
+                this.missileBurstTimer += dt;
+                if (this.missileBurstTimer >= 0.1) { // Fire one every 0.1s
+                    const target = this.findNearestEnemy();
+                    if (target) {
+                        this.projectiles.push(new Missile(this.game, this.x, this.y, target));
+                        this.missileQueue--;
+                        this.missileBurstTimer = 0;
+                    } else {
+                        // No target, cancel queue
+                        this.missileQueue = 0;
+                    }
                 }
             }
         }

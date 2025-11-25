@@ -35,13 +35,18 @@ export class Game {
         this.obstacles = [];
         this.particles = []; // New Particle System
         this.currentChest = null; // Track which chest is currently open
+        this.drones = [];
 
         // No more sprite assets - Procedural Neon Graphics
 
         this.state = 'title'; // title, home, playing, reward, result
+
+        // Progression
         this.money = 0;
         this.ene = 0;
+        this.totalEneCollected = 0;
         this.mapLevel = 1;
+        this.loopCount = 0; // ステージ10クリア後のループ回数
         this.selectedCharacter = 'girl';
         this.debugMode = false;
 
@@ -100,8 +105,11 @@ export class Game {
         let prevRelics = this.acquiredRelics;
 
         // Calculate difficulty based on map level
-        // Map 1: 1.0, Map 2: 1.5, Map 3: 2.0, Loop: +0.5 per loop
-        const baseDifficulty = 1.0 + (this.mapLevel - 1) * 0.5;
+        // ステージごとの難易度上昇を0.15に削減（以前は0.5）
+        // ループごとに+1.5の難易度追加
+        const stageDifficulty = 1.0 + (this.mapLevel - 1) * 0.15;
+        const loopDifficulty = this.loopCount * 1.5;
+        const baseDifficulty = stageDifficulty + loopDifficulty;
 
         let initialTime = 0;
         if (preserveStats && this.waveManager) {
@@ -152,7 +160,6 @@ export class Game {
         this.chests = [];
         this.floatingTexts = [];
         this.particles = [];
-        // this.drones = []; // Moved to top
 
         // Generate obstacles
         this.obstacles = [];
@@ -710,6 +717,8 @@ export class Game {
         // Loop back to stage 1 after stage 10
         if (this.mapLevel >= 10) {
             this.mapLevel = 1;
+            this.loopCount++; // ループ回数を増やす
+            console.log(`Loop ${this.loopCount} started!`);
         } else {
             this.mapLevel++;
         }

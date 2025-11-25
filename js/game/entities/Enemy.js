@@ -11,7 +11,7 @@ export class Enemy {
         this.radius = 15;
         this.hp = 10;
         this.maxHp = 10;
-        this.damage = 10;
+        this.damage = 5;
         this.markedForDeletion = false;
         this.type = 'enemy';
         this.color = '#ff0000';
@@ -140,7 +140,7 @@ export class Golem extends Enemy {
         this.hp = 100;
         this.maxHp = 100;
         this.radius = 25;
-        this.damage = 20;
+        this.damage = 10;
         this.type = 'golem';
         this.color = '#ff4444'; // Neon Red
     }
@@ -374,7 +374,7 @@ export class KamikazeEnemy extends Enemy {
         this.speed = 180;
         this.hp = 15;
         this.maxHp = 15;
-        this.damage = 40; // High damage
+        this.damage = 20; // High damage
         this.type = 'kamikaze';
         this.color = '#ffaa00'; // Orange
         this.radius = 12;

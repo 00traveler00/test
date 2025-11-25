@@ -15,7 +15,6 @@ export class Drone {
         this.speed = 2; // Orbit speed
 
         // Combat
-        this.damage = 10;
         this.shootInterval = 1.0;
         this.shootTimer = 0;
         this.range = 300;
@@ -59,7 +58,7 @@ export class Drone {
 
             // Drones shoot standard projectiles for now
             const proj = new Projectile(this.game, this.x, this.y, nearest);
-            proj.damage = this.damage; // Override damage
+            proj.damage = this.game.player.damage * 0.6; // 60% of player damage
             proj.color = this.color;   // Override color
             this.game.player.projectiles.push(proj);
         }

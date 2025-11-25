@@ -9,7 +9,7 @@ export class Missile extends Projectile {
         // Missile Stats
         this.speed = 450;
         this.turnSpeed = 5.0; // Radians per second
-        this.damage = game.player.damage * 2.5;
+        this.damage = game.player.damage * 3.0;
         this.color = '#ff0088';
         this.radius = 8;
         this.lifeTime = 2.5;
@@ -23,11 +23,34 @@ export class Missile extends Projectile {
         this.vy = Math.sin(currentAngle + spread) * startSpeed;
     }
 
+    findNearestEnemy() {
+        let nearest = null;
+        let minDist = Infinity;
+
+        if (!this.game.waveManager || !this.game.waveManager.enemies) {
+            return null;
+        }
+
+        this.game.waveManager.enemies.forEach(enemy => {
+            if (enemy.markedForDeletion) return;
+
+            const dx = enemy.x - this.x;
+            const dy = enemy.y - this.y;
+            const dist = dx * dx + dy * dy;
+
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = enemy;
+            }
+        });
+
+        return nearest;
+    }
+
     update(dt) {
         this.lifeTime -= dt;
         if (this.lifeTime <= 0) {
             this.markedForDeletion = true;
-            // TODO: Explosion effect?
             return;
         }
 
@@ -64,8 +87,12 @@ export class Missile extends Projectile {
             this.vx = Math.cos(currentAngle) * speed;
             this.vy = Math.sin(currentAngle) * speed;
         } else {
-            // If target lost, find new target? Or just fly straight.
-            // For now, fly straight.
+            // If target lost, find new target
+            const newTarget = this.findNearestEnemy();
+            if (newTarget) {
+                this.target = newTarget;
+            }
+            // If no new target, just fly straight
         }
 
         // Move

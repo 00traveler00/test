@@ -11,8 +11,8 @@ export class UIManager {
             { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 25, color: '#44ff44', effect: (p) => { p.maxHp += 30; p.hp += 30; } },
             { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 18, color: '#ffaa00', effect: (p) => p.shootInterval *= 0.9 },
             { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 12, color: '#00ffff', effect: (p) => { /* Handled in Drop */ } },
-            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 75, color: '#00ffaa', effect: (p) => p.game.addDrone() },
-            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 100, color: '#ff0088', effect: (p) => p.hasMissileLauncher = true },
+            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 40, color: '#00ffaa', effect: (p) => p.game.addDrone() },
+            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 50, color: '#ff0088', effect: (p) => p.missileCount++ },
             { id: 'full_heal', name: 'Emergency Repair', desc: 'Fully Restores HP', cost: 300, color: '#ff00ff', effect: (p) => p.hp = p.maxHp }
         ];
 

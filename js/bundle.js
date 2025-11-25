@@ -417,7 +417,7 @@ class Missile extends Projectile {
         // Missile Stats
         this.speed = 450;
         this.turnSpeed = 5.0; // Radians per second
-        this.damage = game.player.damage * 2.5;
+        this.damage = game.player.damage * 3.0;
         this.color = '#ff0088';
         this.radius = 8;
         this.lifeTime = 2.5;
@@ -431,11 +431,34 @@ class Missile extends Projectile {
         this.vy = Math.sin(currentAngle + spread) * startSpeed;
     }
 
+    findNearestEnemy() {
+        let nearest = null;
+        let minDist = Infinity;
+
+        if (!this.game.waveManager || !this.game.waveManager.enemies) {
+            return null;
+        }
+
+        this.game.waveManager.enemies.forEach(enemy => {
+            if (enemy.markedForDeletion) return;
+
+            const dx = enemy.x - this.x;
+            const dy = enemy.y - this.y;
+            const dist = dx * dx + dy * dy;
+
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = enemy;
+            }
+        });
+
+        return nearest;
+    }
+
     update(dt) {
         this.lifeTime -= dt;
         if (this.lifeTime <= 0) {
             this.markedForDeletion = true;
-            // TODO: Explosion effect?
             return;
         }
 
@@ -472,8 +495,12 @@ class Missile extends Projectile {
             this.vx = Math.cos(currentAngle) * speed;
             this.vy = Math.sin(currentAngle) * speed;
         } else {
-            // If target lost, find new target? Or just fly straight.
-            // For now, fly straight.
+            // If target lost, find new target
+            const newTarget = this.findNearestEnemy();
+            if (newTarget) {
+                this.target = newTarget;
+            }
+            // If no new target, just fly straight
         }
 
         // Move
@@ -539,7 +566,6 @@ class Drone {
         this.speed = 2; // Orbit speed
 
         // Combat
-        this.damage = 10;
         this.shootInterval = 1.0;
         this.shootTimer = 0;
         this.range = 300;
@@ -583,7 +609,7 @@ class Drone {
 
             // Drones shoot standard projectiles for now
             const proj = new Projectile(this.game, this.x, this.y, nearest);
-            proj.damage = this.damage; // Override damage
+            proj.damage = this.game.player.damage * 0.6; // 60% of player damage
             proj.color = this.color;   // Override color
             this.game.player.projectiles.push(proj);
         }
@@ -746,7 +772,7 @@ class EnemyProjectile {
 
 
 class EnemyMissile extends EnemyProjectile {
-    constructor(game, x, y, target, damage = 15) {
+    constructor(game, x, y, target, damage = 8) {
         super(game, x, y, target, 'missile', damage);
         this.target = target;
         this.speed = 250;
@@ -1195,7 +1221,7 @@ class Enemy {
         this.radius = 15;
         this.hp = 10;
         this.maxHp = 10;
-        this.damage = 10;
+        this.damage = 5;
         this.markedForDeletion = false;
         this.type = 'enemy';
         this.color = '#ff0000';
@@ -1324,7 +1350,7 @@ class Golem extends Enemy {
         this.hp = 100;
         this.maxHp = 100;
         this.radius = 25;
-        this.damage = 20;
+        this.damage = 10;
         this.type = 'golem';
         this.color = '#ff4444'; // Neon Red
     }
@@ -1558,7 +1584,7 @@ class KamikazeEnemy extends Enemy {
         this.speed = 180;
         this.hp = 15;
         this.maxHp = 15;
-        this.damage = 40; // High damage
+        this.damage = 20; // High damage
         this.type = 'kamikaze';
         this.color = '#ffaa00'; // Orange
         this.radius = 12;
@@ -1950,7 +1976,7 @@ class BaseBoss extends Enemy {
         this.speed = 80;
         this.hp = 1000;
         this.maxHp = 1000;
-        this.damage = 25;
+        this.damage = 15;
         this.color = '#ff0000';
 
         // State Machine
@@ -2860,8 +2886,10 @@ class Player {
         this.initCharacter(this.game.selectedCharacter);
 
         // Relic Stats
-        this.hasMissileLauncher = false;
+        this.missileCount = 0; // Number of missile launchers acquired
         this.missileTimer = 0;
+        this.missileQueue = 0; // Number of missiles waiting to fire
+        this.missileBurstTimer = 0; // Timer for burst firing
     }
 
     initCharacter(charType) {
@@ -2923,9 +2951,7 @@ class Player {
         this.shootTimer += dt;
         if (this.shootTimer >= this.shootInterval) {
             const target = this.findNearestEnemy();
-            // console.log('Finding target...', target); // DEBUG
             if (target) {
-                // console.log('Shooting at enemy!', target.type); // DEBUG
                 this.shoot(target);
                 this.shootTimer = 0;
             }
@@ -2935,15 +2961,33 @@ class Player {
         this.projectiles.forEach(p => p.update(dt));
         this.projectiles = this.projectiles.filter(p => !p.markedForDeletion);
 
-        // Missile Launcher Logic
-        if (this.hasMissileLauncher) {
+        // Missile Launcher Logic - Fire missiles sequentially
+        if (this.missileCount > 0) {
             this.missileTimer += dt;
-            if (this.missileTimer >= 1.5) { // Fire every 1.5s
+
+            // Queue missiles to fire
+            if (this.missileTimer >= 1.5 && this.missileQueue === 0) {
                 const target = this.findNearestEnemy();
                 if (target) {
-                    this.projectiles.push(new Missile(this.game, this.x, this.y, target));
+                    this.missileQueue = this.missileCount; // Queue all missiles
+                    this.missileBurstTimer = 0;
                     this.missileTimer = 0;
-                    // Optional: Add specific missile sound here if available
+                }
+            }
+
+            // Fire missiles from queue sequentially
+            if (this.missileQueue > 0) {
+                this.missileBurstTimer += dt;
+                if (this.missileBurstTimer >= 0.1) { // Fire one every 0.1s
+                    const target = this.findNearestEnemy();
+                    if (target) {
+                        this.projectiles.push(new Missile(this.game, this.x, this.y, target));
+                        this.missileQueue--;
+                        this.missileBurstTimer = 0;
+                    } else {
+                        // No target, cancel queue
+                        this.missileQueue = 0;
+                    }
                 }
             }
         }
@@ -3564,8 +3608,8 @@ class UIManager {
             { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 25, color: '#44ff44', effect: (p) => { p.maxHp += 30; p.hp += 30; } },
             { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 18, color: '#ffaa00', effect: (p) => p.shootInterval *= 0.9 },
             { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 12, color: '#00ffff', effect: (p) => { /* Handled in Drop */ } },
-            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 75, color: '#00ffaa', effect: (p) => p.game.addDrone() },
-            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 100, color: '#ff0088', effect: (p) => p.hasMissileLauncher = true },
+            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 40, color: '#00ffaa', effect: (p) => p.game.addDrone() },
+            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 50, color: '#ff0088', effect: (p) => p.missileCount++ },
             { id: 'full_heal', name: 'Emergency Repair', desc: 'Fully Restores HP', cost: 300, color: '#ff00ff', effect: (p) => p.hp = p.maxHp }
         ];
 
@@ -4363,13 +4407,18 @@ class Game {
         this.obstacles = [];
         this.particles = []; // New Particle System
         this.currentChest = null; // Track which chest is currently open
+        this.drones = [];
 
         // No more sprite assets - Procedural Neon Graphics
 
         this.state = 'title'; // title, home, playing, reward, result
+
+        // Progression
         this.money = 0;
         this.ene = 0;
+        this.totalEneCollected = 0;
         this.mapLevel = 1;
+        this.loopCount = 0; // ステージ10クリア後のループ回数
         this.selectedCharacter = 'girl';
         this.debugMode = false;
 
@@ -4428,8 +4477,11 @@ class Game {
         let prevRelics = this.acquiredRelics;
 
         // Calculate difficulty based on map level
-        // Map 1: 1.0, Map 2: 1.5, Map 3: 2.0, Loop: +0.5 per loop
-        const baseDifficulty = 1.0 + (this.mapLevel - 1) * 0.5;
+        // ステージごとの難易度上昇を0.15に削減（以前は0.5）
+        // ループごとに+1.5の難易度追加
+        const stageDifficulty = 1.0 + (this.mapLevel - 1) * 0.15;
+        const loopDifficulty = this.loopCount * 1.5;
+        const baseDifficulty = stageDifficulty + loopDifficulty;
 
         let initialTime = 0;
         if (preserveStats && this.waveManager) {
@@ -4480,7 +4532,6 @@ class Game {
         this.chests = [];
         this.floatingTexts = [];
         this.particles = [];
-        // this.drones = []; // Moved to top
 
         // Generate obstacles
         this.obstacles = [];
@@ -5038,6 +5089,8 @@ class Game {
         // Loop back to stage 1 after stage 10
         if (this.mapLevel >= 10) {
             this.mapLevel = 1;
+            this.loopCount++; // ループ回数を増やす
+            console.log(`Loop ${this.loopCount} started!`);
         } else {
             this.mapLevel++;
         }

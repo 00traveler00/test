@@ -14,7 +14,7 @@ export class BaseBoss extends Enemy {
         this.speed = 80;
         this.hp = 1000;
         this.maxHp = 1000;
-        this.damage = 25;
+        this.damage = 15;
         this.color = '#ff0000';
 
         // State Machine
