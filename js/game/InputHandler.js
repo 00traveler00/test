@@ -21,6 +21,14 @@ export class InputHandler {
     }
 
     handleTouchStart(e) {
+        // Allow scrolling/interaction on specific UI containers
+        if (e.target.closest('.victory-container') ||
+            e.target.closest('.gameover-container') ||
+            e.target.closest('.options-container') ||
+            e.target.closest('.scrollable')) {
+            return;
+        }
+
         e.preventDefault();
         this.touchActive = true;
         this.touchStart.x = e.touches[0].clientX;
@@ -31,6 +39,14 @@ export class InputHandler {
     }
 
     handleTouchMove(e) {
+        // Allow scrolling/interaction on specific UI containers
+        if (e.target.closest('.victory-container') ||
+            e.target.closest('.gameover-container') ||
+            e.target.closest('.options-container') ||
+            e.target.closest('.scrollable')) {
+            return;
+        }
+
         e.preventDefault();
         if (!this.touchActive) return;
         this.touchCurrent.x = e.touches[0].clientX;
@@ -39,6 +55,14 @@ export class InputHandler {
     }
 
     handleTouchEnd(e) {
+        // Allow scrolling/interaction on specific UI containers
+        if (e.target.closest('.victory-container') ||
+            e.target.closest('.gameover-container') ||
+            e.target.closest('.options-container') ||
+            e.target.closest('.scrollable')) {
+            return;
+        }
+
         e.preventDefault();
         this.touchActive = false;
         this.joystickVector = { x: 0, y: 0 };
