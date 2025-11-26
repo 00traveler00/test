@@ -202,7 +202,7 @@ export class Overlord extends BaseBoss {
             if (Math.abs(angleDiff) < 0.2) {
                 const dmg = this.damage * 2.0 * 0.016; // Rapid damage
                 p.hp -= dmg;
-                if (p.hp <= 0) this.game.setState('result');
+                if (p.hp <= 0) this.game.gameOver();
                 this.game.showDamage(p.x, p.y, Math.ceil(dmg), '#00ffff');
             }
         }

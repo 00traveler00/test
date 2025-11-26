@@ -310,7 +310,7 @@ export class Totem extends Enemy {
 
         if (dist < 150) { // Blast radius
             this.game.player.hp -= this.damage * 2.0 * 0.016; // Rapid damage (scaled)
-            if (this.game.player.hp <= 0) this.game.setState('result');
+            if (this.game.player.hp <= 0) this.game.gameOver();
         }
     }
 
@@ -558,7 +558,7 @@ export class BeamEnemy extends Enemy {
 
             if (Math.abs(angleDiff) < 0.15) { // Narrow beam
                 p.hp -= this.damage * 2.0 * 0.016; // Rapid damage (scaled)
-                if (p.hp <= 0) this.game.setState('result');
+                if (p.hp <= 0) this.game.gameOver();
             }
         }
     }
