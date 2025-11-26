@@ -61,9 +61,12 @@ export class Projectile {
     }
 
     draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = 0.6; // Semi-transparent for better visibility
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
+        ctx.restore();
     }
 }

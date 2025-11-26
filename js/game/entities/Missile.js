@@ -113,6 +113,7 @@ export class Missile extends Projectile {
 
     draw(ctx) {
         ctx.save();
+        ctx.globalAlpha = 0.6; // Semi-transparent
         ctx.translate(this.x, this.y);
         ctx.rotate(Math.atan2(this.vy, this.vx));
 

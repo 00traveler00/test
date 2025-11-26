@@ -455,10 +455,13 @@ class Projectile {
     }
 
     draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = 0.6; // Semi-transparent for better visibility
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
+        ctx.restore();
     }
 }
 
@@ -518,6 +521,7 @@ class PiercingProjectile {
     draw(ctx) {
         // Outer glow
         ctx.save();
+        ctx.globalAlpha = 0.6; // Semi-transparent
         ctx.shadowBlur = 15;
         ctx.shadowColor = this.color;
         ctx.fillStyle = this.color;
@@ -660,6 +664,7 @@ class Missile extends Projectile {
 
     draw(ctx) {
         ctx.save();
+        ctx.globalAlpha = 0.6; // Semi-transparent
         ctx.translate(this.x, this.y);
         ctx.rotate(Math.atan2(this.vy, this.vx));
 

@@ -52,6 +52,7 @@ export class PiercingProjectile {
     draw(ctx) {
         // Outer glow
         ctx.save();
+        ctx.globalAlpha = 0.6; // Semi-transparent
         ctx.shadowBlur = 15;
         ctx.shadowColor = this.color;
         ctx.fillStyle = this.color;
