@@ -99,6 +99,16 @@ export class Game {
     }
 
     startRun(preserveStats = false) {
+        if (!preserveStats) {
+            // Reset run-specific stats for a new game
+            this.totalStagesCleared = 0;
+            this.loopCount = 0;
+            this.mapLevel = 1;
+            this.ene = 0;
+            this.acquiredRelics = [];
+            console.log("Starting new run: Stats reset.");
+        }
+
         // Initialize audio on first start
         this.audio.init();
         this.audio.playBGM();
@@ -118,19 +128,17 @@ export class Game {
             initialTime = this.waveManager.time;
         }
 
-        // Calculate difficulty based on total stages cleared AND total time
-        // 通算ステージクリア回数 × 通算時間に基づく指数的な増加
-        // (time / 240)^3 -> 60s: 0.016, 120s: 0.125, 240s: 1.0, 360s: 3.375
-        const timeBasedIncrement = Math.pow(initialTime / 240.0, 3.0);
-        const stageDifficulty = 1.0 + this.totalStagesCleared * timeBasedIncrement;
-        const timeDifficulty = Math.pow(initialTime / 300.0, 4.0);
-        const loopDifficulty = this.loopCount * 0.8;
+        // Calculate difficulty based on total stages cleared (Time scaling is handled in WaveManager)
+        // 通算ステージクリア回数に基づく基礎難易度
+        // 1ステージクリアごとに +0.1 (10%)
+        const stageDifficulty = 1.0 + (this.totalStagesCleared * 0.1);
+        const loopDifficulty = this.loopCount * 0.5; // ループごとの難易度上昇を少しマイルドに
 
-        const baseDifficulty = stageDifficulty + timeDifficulty + loopDifficulty;
+        const baseDifficulty = stageDifficulty + loopDifficulty;
 
         // Debug: Log difficulty breakdown
-        console.log(`[Difficulty] Total Stages Cleared: ${this.totalStagesCleared}, Time: ${initialTime.toFixed(1)}s`);
-        console.log(`[Difficulty] Stage: ${stageDifficulty.toFixed(2)}, Time: ${timeDifficulty.toFixed(2)}, Loop: ${loopDifficulty.toFixed(2)}, Total: ${baseDifficulty.toFixed(2)}`);
+        console.log(`[Difficulty Init] Total Stages: ${this.totalStagesCleared}, Loop: ${this.loopCount}`);
+        console.log(`[Difficulty Init] Base: ${baseDifficulty.toFixed(2)} (Stage: ${stageDifficulty.toFixed(2)} + Loop: ${loopDifficulty.toFixed(2)})`);
 
         this.waveManager = new WaveManager(this, baseDifficulty, initialTime);
         this.player = new Player(this, this.worldWidth / 2, this.worldHeight / 2);
@@ -908,6 +916,9 @@ export class Game {
         // NEXT STAGEボタン押下時 - 次のマップへ
         // 台座を削除
         this.nextStageAltar = null;
+
+        // Reset Ene (Do not carry over to next stage)
+        this.ene = 0;
 
         // 次のマップへ（お金は保存しない）
         this.nextMap();

@@ -417,9 +417,12 @@ export class UIManager {
         }
 
         // Calculate cost multiplier based on fixed difficulty (from chest) or current difficulty
-        // Use the same scaling formula as enemy HP: difficulty^1.5
+        // Price scaling: 0.6 * difficulty^2.0
+        // Diff 1.0: 60% (Cheaper)
+        // Diff 2.0: 240% (vs 283% - Cheaper)
+        // Diff 3.0: 540% (vs 520% - Higher)
         const currentDifficulty = fixedDifficulty || (this.game.waveManager ? this.game.waveManager.difficulty : 1.0);
-        const priceScaling = Math.pow(currentDifficulty, 1.5);
+        const priceScaling = 0.6 * Math.pow(currentDifficulty, 2.0);
 
         choices.forEach(relic => {
             // Scale the price exponentially based on difficulty
