@@ -3535,6 +3535,16 @@ class UpgradeSystem {
     }
 
     applyUpgrades(player) {
+        // Null safety checks
+        if (!player) {
+            console.error('UpgradeSystem.applyUpgrades: player is null');
+            return;
+        }
+        if (!this.upgrades) {
+            console.error('UpgradeSystem.applyUpgrades: upgrades data is null');
+            return;
+        }
+
         player.maxHp += this.upgrades.maxHp.level * this.upgrades.maxHp.increment;
         player.hp = player.maxHp; // Heal to full
         player.damage += this.upgrades.damage.level * this.upgrades.damage.increment;
@@ -3544,7 +3554,8 @@ class UpgradeSystem {
     save() {
         const data = {
             money: this.game.money,
-            upgrades: this.upgrades
+            upgrades: this.upgrades,
+            totalStagesCleared: this.game.totalStagesCleared
         };
         localStorage.setItem('yurufuwa_save', JSON.stringify(data));
     }
@@ -3554,6 +3565,7 @@ class UpgradeSystem {
         if (json) {
             const data = JSON.parse(json);
             this.game.money = data.money || 0;
+            this.game.totalStagesCleared = data.totalStagesCleared || 0;
             if (data.upgrades) {
                 for (const key in data.upgrades) {
                     if (this.upgrades[key]) {
@@ -5309,6 +5321,7 @@ class Game {
         this.totalEneCollected = 0;
         this.mapLevel = 1;
         this.loopCount = 0; // ステージ10クリア後のループ回数
+        this.totalStagesCleared = 0; // 通算ステージクリア回数（難易度計算用）
         this.selectedCharacter = 'girl';
         this.debugMode = false;
 
@@ -5374,17 +5387,24 @@ class Game {
         let prevSpeed = this.player ? this.player.speed : null;
         let prevRelics = this.acquiredRelics;
 
-        // Calculate difficulty based on map level
-        // ステージごとの難易度上昇を0.08にさらに削減（以前は0.15→0.5）
-        // ループごとに+0.8の難易度追加（以前は1.5）
-        const stageDifficulty = 1.0 + (this.mapLevel - 1) * 0.08;
-        const loopDifficulty = this.loopCount * 0.8;
-        const baseDifficulty = stageDifficulty + loopDifficulty;
-
         let initialTime = 0;
         if (preserveStats && this.waveManager) {
             initialTime = this.waveManager.time;
         }
+
+        // Calculate difficulty based on total stages cleared AND total time
+        // 通算ステージクリア回数 × 通算時間に基づく指数的な増加
+        // (time / 240)^3 -> 60s: 0.016, 120s: 0.125, 240s: 1.0, 360s: 3.375
+        const timeBasedIncrement = Math.pow(initialTime / 240.0, 3.0);
+        const stageDifficulty = 1.0 + this.totalStagesCleared * timeBasedIncrement;
+        const timeDifficulty = Math.pow(initialTime / 300.0, 4.0);
+        const loopDifficulty = this.loopCount * 0.8;
+
+        const baseDifficulty = stageDifficulty + timeDifficulty + loopDifficulty;
+
+        // Debug: Log difficulty breakdown
+        console.log(`[Difficulty] Total Stages Cleared: ${this.totalStagesCleared}, Time: ${initialTime.toFixed(1)}s`);
+        console.log(`[Difficulty] Stage: ${stageDifficulty.toFixed(2)}, Time: ${timeDifficulty.toFixed(2)}, Loop: ${loopDifficulty.toFixed(2)}, Total: ${baseDifficulty.toFixed(2)}`);
 
         this.waveManager = new WaveManager(this, baseDifficulty, initialTime);
         this.player = new Player(this, this.worldWidth / 2, this.worldHeight / 2);
@@ -6090,6 +6110,9 @@ class Game {
     }
 
     nextMap() {
+        // Increment total stages cleared (used for difficulty calculation)
+        this.totalStagesCleared++;
+
         // Loop back to stage 1 after stage 10
         if (this.mapLevel >= 10) {
             this.mapLevel = 1;
@@ -6305,6 +6328,12 @@ class Game {
 
             // Update HUD to reflect the change
             this.ui.updateAcquiredItems(this.acquiredRelics);
+
+            // Reset NextStageAltar flags to prevent automatic activation
+            if (this.nextStageAltar) {
+                this.nextStageAltar.wasPlayerNear = true; // Mark as "already near" to prevent trigger
+                this.nextStageAltar.activated = true; // Prevent activation
+            }
 
             // Revive with 50% HP
             this.player.hp = this.player.maxHp * 0.5;

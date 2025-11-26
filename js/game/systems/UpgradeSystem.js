@@ -24,6 +24,16 @@ export class UpgradeSystem {
     }
 
     applyUpgrades(player) {
+        // Null safety checks
+        if (!player) {
+            console.error('UpgradeSystem.applyUpgrades: player is null');
+            return;
+        }
+        if (!this.upgrades) {
+            console.error('UpgradeSystem.applyUpgrades: upgrades data is null');
+            return;
+        }
+
         player.maxHp += this.upgrades.maxHp.level * this.upgrades.maxHp.increment;
         player.hp = player.maxHp; // Heal to full
         player.damage += this.upgrades.damage.level * this.upgrades.damage.increment;
@@ -33,7 +43,8 @@ export class UpgradeSystem {
     save() {
         const data = {
             money: this.game.money,
-            upgrades: this.upgrades
+            upgrades: this.upgrades,
+            totalStagesCleared: this.game.totalStagesCleared
         };
         localStorage.setItem('yurufuwa_save', JSON.stringify(data));
     }
@@ -43,6 +54,7 @@ export class UpgradeSystem {
         if (json) {
             const data = JSON.parse(json);
             this.game.money = data.money || 0;
+            this.game.totalStagesCleared = data.totalStagesCleared || 0;
             if (data.upgrades) {
                 for (const key in data.upgrades) {
                     if (this.upgrades[key]) {
