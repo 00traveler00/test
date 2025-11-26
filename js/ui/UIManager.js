@@ -187,7 +187,7 @@ export class UIManager {
                             </div>
                         </div>
                         <div class="result-summary-item">
-                            <h3>Reached Stage</h3>
+                            <h3>Stage</h3>
                             <p class="result-big-text"><span id="go-level">1</span></p>
                         </div>
                         <div class="result-summary-item">

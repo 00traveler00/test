@@ -3644,15 +3644,13 @@ class WaveManager {
         if (!this.spawningStopped) {
             this.spawnTimer += dt;
 
-            // RoR2 Style Difficulty Scaling
-            // Exponential growth: slow in early game, faster in late game
-            // Formula: (1 + time/180)^1.5
-            // Examples: 0s=1.0, 60s=1.23, 120s=1.52, 180s=1.86, 300s=2.67, 600s=6.27
-            const timeScaling = Math.pow(1.0 + (this.time / 180.0), 1.5);
+            // Time-based Scaling (Exponential growth for gradual early game, accelerating late game)
+            // Changed: 180→300 for slower early scaling, 1.5→1.3 for gentler curve
+            const timeScaling = Math.pow(1.0 + (this.time / 300.0), 1.3);
             this.difficulty = this.initialDifficulty * timeScaling;
 
             // Spawn Interval decreases with difficulty
-            // Base 2.0s -> limit to 0.3s (以前は1.5s -> 0.2s)
+            // Base 2.0s -> limit to 0.3s
             const currentInterval = Math.max(0.3, 2.0 / Math.sqrt(this.difficulty));
 
             if (this.spawnTimer >= currentInterval) {
@@ -4011,7 +4009,7 @@ class UIManager {
                             </div>
                         </div>
                         <div class="result-summary-item">
-                            <h3>Reached Stage</h3>
+                            <h3>Stage</h3>
                             <p class="result-big-text"><span id="go-level">1</span></p>
                         </div>
                         <div class="result-summary-item">
