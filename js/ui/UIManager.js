@@ -176,32 +176,34 @@ export class UIManager {
 
         // Game Over Screen
         this.screens.gameover = this.createScreen('gameover-screen', `
-            <h2 style="color: #ff0000;">GAME OVER</h2>
-            <div class="result-stats-container">
-                <div class="result-section">
-                    <h3>Reached Stage</h3>
-                    <p class="result-big-text"><span id="go-level">1</span></p>
-                </div>
-                <div class="result-section">
-                    <h3>Total Ene</h3>
-                    <p class="result-big-text"><span id="go-ene">0</span></p>
-                </div>
-                <div class="result-section">
-                    <h3>Character Used</h3>
-                    <div style="display: flex; justify-content: center; align-items: center; height: 60px; width: 100%;">
-                        <canvas id="go-character" width="50" height="50" style="width: 50px; height: 50px; display: block;"></canvas>
+            <div class="gameover-container">
+                <h2 style="color: #ff0000;">GAME OVER</h2>
+                <div class="result-stats-container">
+                    <div class="result-section">
+                        <h3>Reached Stage</h3>
+                        <p class="result-big-text"><span id="go-level">1</span></p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Total Ene</h3>
+                        <p class="result-big-text"><span id="go-ene">0</span></p>
+                    </div>
+                    <div class="result-section">
+                        <h3>Character Used</h3>
+                        <div style="display: flex; justify-content: center; align-items: center; height: 60px; width: 100%;">
+                            <canvas id="go-character" width="50" height="50" style="width: 50px; height: 50px; display: block;"></canvas>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Defeated Enemies</h3>
+                        <div id="go-enemies" class="result-grid"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Acquired Items</h3>
+                        <div id="go-items" class="result-grid"></div>
                     </div>
                 </div>
-                <div class="result-section">
-                    <h3>Defeated Enemies</h3>
-                    <div id="go-enemies" class="result-grid"></div>
-                </div>
-                <div class="result-section">
-                    <h3>Acquired Items</h3>
-                    <div id="go-items" class="result-grid"></div>
-                </div>
+                <button id="btn-go-home" class="cyber-btn">RETURN HOME</button>
             </div>
-            <button id="btn-go-home" class="cyber-btn">RETURN HOME</button>
         `);
 
         // Reward Screen (New)
