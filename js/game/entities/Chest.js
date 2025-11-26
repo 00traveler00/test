@@ -17,13 +17,36 @@ export class Chest {
     }
 
     generateRewards() {
-        // Access relics from UIManager via Game
-        // Note: This assumes UIManager is initialized. If not, we might need a static list or callback.
-        // Since Chest is created in startRun, UI should be ready.
         if (!this.game.ui || !this.game.ui.relics) return [];
 
-        const shuffled = [...this.game.ui.relics].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 3);
+        const selected = [];
+        const available = [...this.game.ui.relics];
+
+        // 3つのアイテムを選択
+        for (let i = 0; i < 3 && available.length > 0; i++) {
+            // 残っているアイテムの合計weightを計算
+            const totalWeight = available.reduce((sum, r) => sum + r.weight, 0);
+            let random = Math.random() * totalWeight;
+
+            // weightに基づいて選択
+            let selectedRelic = null;
+            for (const relic of available) {
+                random -= relic.weight;
+                if (random <= 0) {
+                    selectedRelic = relic;
+                    break;
+                }
+            }
+
+            // 選択したアイテムを追加し、リストから削除
+            if (selectedRelic) {
+                selected.push(selectedRelic);
+                const index = available.findIndex(r => r.id === selectedRelic.id);
+                if (index !== -1) available.splice(index, 1);
+            }
+        }
+
+        return selected;
     }
 
     update(dt) {

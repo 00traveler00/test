@@ -1,37 +1,26 @@
-export class Projectile {
+export class PiercingProjectile {
     constructor(game, x, y, target, angleOffset = 0) {
         this.game = game;
         this.x = x;
         this.y = y;
-        this.speed = 300;
-        this.radius = 5 * (game.player.projectileSize || 1); // Amplifier Core effect
-        this.damage = game.player.damage; // Use player damage
-
-        // Debug: Check initial damage
-        if (isNaN(this.damage)) {
-            console.error("Projectile created with NaN damage!", { playerDamage: game.player.damage, player: game.player });
-        }
-
+        this.speed = 250; // Slightly slower than normal
+        this.radius = 7; // Slightly larger
+        this.damage = game.player.damage * 0.8; // 80% damage for balance
         this.markedForDeletion = false;
-        this.color = '#ffff00';
+        this.color = '#00aaff'; // Cyan/blue color
         this.isCrit = false; // Lucky Dice: Critical hit flag
+        this.hitEnemies = new Set(); // Track hit enemies to avoid multiple hits
 
         // Lucky Dice: Critical hit chance
         if (game.player.critChance && Math.random() < game.player.critChance) {
             this.isCrit = true;
             this.damage *= 2; // Critical damage is 2x
-            // this.color = '#ff8800'; // REMOVED: Keep original bullet color
-
-            // Debug: Check damage after crit
-            if (isNaN(this.damage)) {
-                console.error("Projectile damage became NaN after crit calculation!", { damage: this.damage });
-            }
         }
 
         // Safeguard: Ensure damage is a valid number
         if (isNaN(this.damage)) {
-            console.warn("Projectile damage was NaN, resetting to default 10");
-            this.damage = 10;
+            console.warn("PiercingProjectile damage was NaN, resetting to default 8");
+            this.damage = 8;
         }
 
         // Calculate direction to target
@@ -61,9 +50,29 @@ export class Projectile {
     }
 
     draw(ctx) {
+        // Outer glow
+        ctx.save();
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
         ctx.fill();
+
+        // Inner core
+        ctx.shadowBlur = 5;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    hasHit(enemyId) {
+        return this.hitEnemies.has(enemyId);
+    }
+
+    markHit(enemyId) {
+        this.hitEnemies.add(enemyId);
     }
 }

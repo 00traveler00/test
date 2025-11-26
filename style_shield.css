@@ -1,0 +1,17 @@
+﻿
+/* Shield Bar (Energy Barrier) */
+#shield-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4488ff, #88aaff);
+    box-shadow: 0 0 10px rgba(136, 136, 255, 0.8);
+    transition: width 0.3s ease;
+    z-index: 1;
+}
+
+.bar {
+    position: relative;
+}

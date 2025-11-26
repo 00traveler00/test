@@ -6,7 +6,7 @@ import { UIManager } from '../ui/UIManager.js';
 import { UpgradeSystem } from './systems/UpgradeSystem.js';
 import { EnemyProjectile } from './entities/EnemyProjectile.js';
 import { Chest } from './entities/Chest.js';
-import { FloatingText } from './ui/FloatingText.js';
+import { FloatingText } from './entities/FloatingText.js';
 import { Obstacle } from './entities/Obstacle.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { Minimap } from './ui/Minimap.js';
@@ -85,6 +85,7 @@ export class Game {
         } else if (newState === 'title') {
             // Reset
         } else if (newState === 'home') {
+            this.mapLevel = 1; // Reset to stage 1 when returning home
             this.ui.updateHome();
         }
     }
@@ -237,8 +238,28 @@ export class Game {
             this.floatingTexts = this.floatingTexts.filter(t => !t.markedForDeletion);
 
             this.obstacles.forEach(o => o.update(dt));
-
             this.drones.forEach(d => d.update(dt));
+
+            // HP Regeneration (Nano Repair)
+            if (this.player && this.player.hpRegen && this.player.hp < this.player.maxHp) {
+                this.player.hp = Math.min(this.player.maxHp, this.player.hp + this.player.hpRegen * dt);
+            }
+
+            // Shield Regeneration (Energy Barrier)
+            if (this.player && this.player.maxShield && this.player.maxShield > 0) {
+                // Initialize shield regen timer
+                if (this.player.shieldRegenTimer === undefined) {
+                    this.player.shieldRegenTimer = 0;
+                }
+
+                // Increment timer
+                this.player.shieldRegenTimer += dt;
+
+                // Regenerate shield after 5 seconds of not being hit
+                if (this.player.shieldRegenTimer >= 5.0 && this.player.shield < this.player.maxShield) {
+                    this.player.shield = Math.min(this.player.maxShield, this.player.shield + 10 * dt); // 10 shield/sec
+                }
+            }
 
             this.checkCollisions(dt);
 
@@ -247,13 +268,14 @@ export class Game {
                 this.gameOver();
             }
 
+
             // Update HUD
             if (this.player && this.waveManager) {
                 const hpPercent = (this.player.hp / this.player.maxHp) * 100;
 
-                // Calculate effective difficulty for display
-                const mapMultiplier = 1 + (this.mapLevel - 1) * 0.5;
-                const effectiveDifficulty = this.waveManager.difficulty * mapMultiplier;
+
+                // Calculate effective difficulty for display (マップボーナス廃止)
+                const effectiveDifficulty = this.waveManager.difficulty;
 
                 this.ui.updateHUD(
                     hpPercent,
@@ -261,7 +283,9 @@ export class Game {
                     this.player.hp,
                     this.player.maxHp,
                     this.waveManager.time,
-                    effectiveDifficulty
+                    effectiveDifficulty,
+                    this.player.shield || 0,
+                    this.player.maxShield || 0
                 );
             }
         }
@@ -287,7 +311,24 @@ export class Game {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < enemy.radius + this.player.radius) {
-                const dmg = enemy.damage * dt; // Scale damage by dt
+                let dmg = enemy.damage * dt; // Scale damage by dt
+                dmg = dmg * (this.player.damageMultiplier || 1.0); // Titanium Plating effect
+
+                // Energy Barrier: Shield absorbs damage first
+                if (this.player.shield && this.player.shield > 0) {
+                    const shieldAbsorb = Math.min(this.player.shield, dmg);
+                    this.player.shield -= shieldAbsorb;
+                    dmg -= shieldAbsorb;
+                    if (shieldAbsorb > 0) {
+                        this.showDamage(this.player.x, this.player.y - 20, Math.round(shieldAbsorb), '#8888ff');
+                    }
+                }
+
+                // Reset shield regeneration timer on hit
+                if (this.player.shieldRegenTimer !== undefined) {
+                    this.player.shieldRegenTimer = 0;
+                }
+
                 this.player.hp -= dmg;
                 if (this.player.hp <= 0) {
                     this.gameOver();
@@ -315,6 +356,11 @@ export class Game {
             this.waveManager.enemies.forEach(enemy => {
                 if (proj.markedForDeletion || enemy.markedForDeletion) return;
 
+                // For piercing projectiles, skip if already hit this enemy
+                if (proj.hasHit && proj.hasHit(enemy.id || enemy)) {
+                    return;
+                }
+
                 const dx = enemy.x - proj.x;
                 const dy = enemy.y - proj.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -322,7 +368,23 @@ export class Game {
                 if (dist < enemy.radius + proj.radius) {
                     // Check if damage is taken
                     if (enemy.takeDamage(proj.damage)) {
-                        this.showDamage(enemy.x, enemy.y, Math.round(proj.damage), '#fff');
+                        // Debug: Check damage before display
+                        if (isNaN(proj.damage)) {
+                            console.error("Damage is NaN before display!", { projDamage: proj.damage, isCrit: proj.isCrit });
+                            proj.damage = 1; // Fallback to 1
+                        }
+
+                        let damageVal = Math.round(proj.damage);
+                        if (isNaN(damageVal)) damageVal = 1;
+
+                        // Always use standard display (White, no '!')
+                        const damageColor = '#fff';
+                        const damageText = damageVal;
+
+                        // Lucky Dice: Orange outline for critical hits
+                        const outlineColor = proj.isCrit ? '#ff8800' : null;
+
+                        this.showDamage(enemy.x, enemy.y, damageText, damageColor, outlineColor);
                         this.audio.playHit(); // Sound effect
 
                         // Spawn Particles
@@ -332,19 +394,39 @@ export class Game {
 
                         if (enemy.hp <= 0) {
                             enemy.markedForDeletion = true;
-                            // Drop Scaling: Value based on Max HP
-                            const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10));
+
+                            // Vampire Fang: Life steal on kill
+                            if (this.player.lifeSteal) {
+                                const healAmount = proj.damage * this.player.lifeSteal;
+                                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                                this.showDamage(this.player.x, this.player.y - 30, '+' + Math.round(healAmount), '#00ff00');
+                            }
+
+                            // Drop Scaling: Value based on Max HP (1.2倍に増加)
+                            const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10 * 1.2));
                             this.drops.push(new Drop(this, enemy.x, enemy.y, 'energy', dropValue));
 
                             // Track Kill
                             if (!this.killCount[enemy.type]) this.killCount[enemy.type] = 0;
                             this.killCount[enemy.type]++;
                         }
+
+                        // For piercing projectiles, mark the enemy as hit instead of deleting the projectile
+                        if (proj.markHit) {
+                            proj.markHit(enemy.id || enemy);
+                        } else {
+                            // Normal projectile: mark for deletion
+                            proj.markedForDeletion = true;
+                        }
                     } else {
                         // Damage Blocked (Sound effect?)
                         this.audio.playHit(); // Maybe a different sound for block?
+
+                        // Non-piercing projectiles still get deleted on block
+                        if (!proj.markHit) {
+                            proj.markedForDeletion = true;
+                        }
                     }
-                    proj.markedForDeletion = true;
                 }
             });
         });
@@ -357,18 +439,35 @@ export class Game {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < this.player.radius + proj.radius) {
-                this.player.hp -= proj.damage;
-                this.showDamage(this.player.x, this.player.y, Math.round(proj.damage), '#ff0000');
+                let dmg = proj.damage * (this.player.damageMultiplier || 1.0); // Titanium Plating effect
+
+                // Energy Barrier: Shield absorbs damage first
+                if (this.player.shield && this.player.shield > 0) {
+                    const shieldAbsorb = Math.min(this.player.shield, dmg);
+                    this.player.shield -= shieldAbsorb;
+                    dmg -= shieldAbsorb;
+                    if (shieldAbsorb > 0) {
+                        this.showDamage(this.player.x, this.player.y - 20, Math.round(shieldAbsorb), '#8888ff');
+                    }
+                }
+
+                // Reset shield regeneration timer on hit
+                if (this.player.shieldRegenTimer !== undefined) {
+                    this.player.shieldRegenTimer = 0;
+                }
+
+                this.player.hp -= dmg;
+                this.showDamage(this.player.x, this.player.y, Math.round(dmg), '#ff0000');
                 proj.markedForDeletion = true;
                 if (this.player.hp <= 0) {
-                    this.setState('result');
+                    this.gameOver();
                 }
             }
         });
     }
 
-    showDamage(x, y, amount, color) {
-        this.floatingTexts.push(new FloatingText(x, y, Math.round(amount), color));
+    showDamage(x, y, amount, color, outlineColor = null) {
+        this.floatingTexts.push(new FloatingText(x, y, amount, color, outlineColor));
     }
 
     openChest(chest) {
@@ -803,6 +902,13 @@ export class Game {
         document.getElementById('victory-ene').innerText = this.totalEneCollected;
         document.getElementById('victory-money').innerText = bonusMoney;
 
+        // Draw Player Character
+        const charCanvas = document.getElementById('victory-character');
+        if (charCanvas) {
+            const ctx = charCanvas.getContext('2d');
+            this.ui.drawPlayerCharacter(ctx, this.selectedCharacter, 25, 25);
+        }
+
         // 敵の表示
         const enemyContainer = document.getElementById('victory-enemies');
         enemyContainer.innerHTML = '';
@@ -814,7 +920,13 @@ export class Game {
             'totem': { color: '#ff00ff', name: 'Totem' },
             'kamikaze': { color: '#ffaa00', name: 'Kamikaze' },
             'missile_enemy': { color: '#ff0088', name: 'Missile Bot' },
-            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' }
+            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' },
+            // Bosses
+            'overlord': { color: '#ff00ff', name: 'Overlord', isBoss: true },
+            'slime_king': { color: '#00ff88', name: 'Slime King', isBoss: true },
+            'mecha_golem': { color: '#ff4444', name: 'Mecha Golem', isBoss: true },
+            'void_phantom': { color: '#8800ff', name: 'Void Phantom', isBoss: true },
+            'crimson_dragon': { color: '#ff0000', name: 'Crimson Dragon', isBoss: true }
         };
 
         for (const [type, count] of Object.entries(this.killCount)) {
@@ -832,7 +944,12 @@ export class Game {
             canvas.height = 40;
             canvas.className = 'result-item-icon';
             const ctx = canvas.getContext('2d');
-            this.ui.drawEnemyIcon(ctx, type, data.color);
+
+            if (data.isBoss) {
+                this.ui.drawBossIcon(ctx, type, data.color);
+            } else {
+                this.ui.drawEnemyIcon(ctx, type, data.color);
+            }
 
             wrapper.appendChild(canvas);
 
@@ -885,6 +1002,39 @@ export class Game {
     }
 
     gameOver() {
+        // Phoenix Heart: Check for revive before game over
+        const phoenixHeartIndex = this.acquiredRelics.findIndex(r => r.id === 'phoenix_heart');
+
+        if (phoenixHeartIndex !== -1) {
+            console.log("🔥 Phoenix Heart activated! Reviving player...");
+
+            // Remove Phoenix Heart from acquired relics
+            this.acquiredRelics.splice(phoenixHeartIndex, 1);
+
+            // Add used Phoenix Heart
+            const usedPhoenixHeart = this.ui.relics.find(r => r.id === 'phoenix_heart_used');
+            if (usedPhoenixHeart) {
+                this.acquiredRelics.push(usedPhoenixHeart);
+            }
+
+            // Update HUD to reflect the change
+            this.ui.updateAcquiredItems(this.acquiredRelics);
+
+            // Revive with 50% HP
+            this.player.hp = this.player.maxHp * 0.5;
+
+            // Visual feedback
+            this.ui.showMessage("💛 PHOENIX HEART ACTIVATED! 💛", 3000);
+            this.audio.playLevelUp(); // Revival sound
+
+            // Spawn particles for effect
+            for (let i = 0; i < 20; i++) {
+                this.particles.push(new Particle(this, this.player.x, this.player.y, '#ffaa00'));
+            }
+
+            return; // Don't actually game over
+        }
+
         // お金を保存
         const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
         this.money += bonusMoney;
@@ -894,5 +1044,41 @@ export class Game {
         this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel);
         // Reset map level on game over
         this.mapLevel = 1;
+    }
+
+    // === Debug Helpers ===
+    giveItem(itemId) {
+        if (!this.player) {
+            console.error('❌ Game not started! Start a mission first.');
+            return;
+        }
+
+        const relic = this.ui.relics.find(r => r.id === itemId);
+        if (!relic) {
+            console.error(`❌ Item not found: ${itemId}`);
+            console.log('Available items:', this.ui.relics.map(r => r.id).join(', '));
+            return;
+        }
+
+        // Apply effect without cost
+        relic.effect(this.player);
+        this.acquiredRelics.push(relic);
+        this.ui.updateAcquiredItems(this.acquiredRelics);
+
+        console.log(`✅ Obtained: ${relic.name} (${relic.desc})`);
+    }
+
+    listItems() {
+        console.log('=== Available Items ===');
+        this.ui.relics.forEach(r => {
+            const rarityColor = {
+                'common': '⬜',
+                'rare': '🔵',
+                'epic': '🟣',
+                'legendary': '🟠'
+            }[r.rarity];
+            console.log(`${rarityColor} ${r.id.padEnd(20)} - ${r.name} (${r.desc})`);
+        });
+        console.log('\nUsage: game.giveItem("item_id")');
     }
 }

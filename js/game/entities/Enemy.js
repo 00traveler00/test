@@ -395,8 +395,25 @@ export class KamikazeEnemy extends Enemy {
 
     explode() {
         this.markedForDeletion = true;
-        this.game.player.hp -= this.damage;
-        this.game.showDamage(this.game.player.x, this.game.player.y, this.damage, '#ffaa00');
+        let dmg = this.damage * (this.game.player.damageMultiplier || 1.0); // Titanium Plating effect
+
+        // Energy Barrier: Shield absorbs damage first
+        if (this.game.player.shield && this.game.player.shield > 0) {
+            const shieldAbsorb = Math.min(this.game.player.shield, dmg);
+            this.game.player.shield -= shieldAbsorb;
+            dmg -= shieldAbsorb;
+            if (shieldAbsorb > 0) {
+                this.game.showDamage(this.game.player.x, this.game.player.y - 20, Math.round(shieldAbsorb), '#8888ff');
+            }
+        }
+
+        // Reset shield regeneration timer on hit
+        if (this.game.player.shieldRegenTimer !== undefined) {
+            this.game.player.shieldRegenTimer = 0;
+        }
+
+        this.game.player.hp -= dmg;
+        this.game.showDamage(this.game.player.x, this.game.player.y, Math.round(dmg), '#ffaa00');
 
         // Explosion visual
         for (let i = 0; i < 20; i++) {

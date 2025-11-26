@@ -577,6 +577,10 @@ h2 {
     .hud-hp-ene-row {
         flex-wrap: wrap;
     }
+
+    cursor: pointer;
+    height: 0;
+    width: 0;
 }
 
 .checkmark {

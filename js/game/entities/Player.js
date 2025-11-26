@@ -1,5 +1,6 @@
 import { Projectile } from './Projectile.js';
 import { Missile } from './Missile.js';
+import { PiercingProjectile } from './PiercingProjectile.js';
 
 export class Player {
     constructor(game, x, y) {
@@ -61,6 +62,7 @@ export class Player {
         }
         this.hp = this.maxHp;
         this.charType = charType;
+        console.log(`Player initialized: ${charType}, Damage: ${this.damage}`);
     }
 
     update(dt) {
@@ -125,14 +127,40 @@ export class Player {
     shoot(target) {
         this.game.audio.playShoot(); // Sound effect
 
+        // Calculate base shots (1 for normal, 3 for dog)
+        let baseShots = [];
         if (this.charType === 'dog') {
             // Dog Skill: 3-way shot
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, 0));
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, 0.2)); // +angle
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, -0.2)); // -angle
+            baseShots = [0, 0.2, -0.2];
         } else {
             // Normal shot
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, 0));
+            baseShots = [0];
+        }
+
+        // Splitter Module: Add extra shots with wider angles
+        if (this.multiShotCount && this.multiShotCount > 1) {
+            const extraShots = this.multiShotCount - 1;
+            const angleStep = 0.15; // Spread angle between extra shots
+
+            for (let i = 0; i < extraShots; i++) {
+                const angleOffset = angleStep * (i + 1);
+                baseShots.push(angleOffset);
+                baseShots.push(-angleOffset);
+            }
+        }
+
+        // Fire all shots
+        baseShots.forEach(angle => {
+            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, angle));
+        });
+
+        // Plasma Orb: Fire piercing projectiles
+        if (this.pierceShotCount && this.pierceShotCount > 0) {
+            for (let i = 0; i < this.pierceShotCount; i++) {
+                // Offset piercing shots slightly to avoid complete overlap
+                const pierceAngle = i * 0.05;
+                this.projectiles.push(new PiercingProjectile(this.game, this.x, this.y, target, pierceAngle));
+            }
         }
     }
 

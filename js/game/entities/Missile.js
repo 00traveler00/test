@@ -9,7 +9,7 @@ export class Missile extends Projectile {
         // Missile Stats
         this.speed = 450;
         this.turnSpeed = 5.0; // Radians per second
-        this.damage = game.player.damage * 3.0;
+        this.damage = game.player.damage * 0.5;
         this.color = '#ff0088';
         this.radius = 8;
         this.lifeTime = 2.5;

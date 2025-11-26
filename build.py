@@ -33,6 +33,7 @@ files = [
     'js/game/entities/Particle.js',
     'js/game/entities/FloatingText.js',
     'js/game/entities/Projectile.js',
+    'js/game/entities/PiercingProjectile.js',
     'js/game/entities/Missile.js',
     'js/game/entities/Drone.js',
     'js/game/entities/EnemyProjectile.js',

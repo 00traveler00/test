@@ -323,11 +323,12 @@ class Particle {
 
 // --- js/game/entities/FloatingText.js ---
 class FloatingText {
-    constructor(x, y, text, color) {
+    constructor(x, y, text, color, borderColor = null) {
         this.x = x;
         this.y = y;
         this.text = text;
         this.color = color;
+        this.borderColor = borderColor;
         this.velocity = { x: (Math.random() - 0.5) * 20, y: -50 };
         this.life = 1.0; // Seconds
         this.opacity = 1.0;
@@ -348,8 +349,16 @@ class FloatingText {
     draw(ctx) {
         ctx.save();
         ctx.globalAlpha = this.opacity;
-        ctx.fillStyle = this.color;
         ctx.font = 'bold 20px "Courier New", monospace';
+
+        // Draw outline if specified
+        if (this.borderColor) {
+            ctx.strokeStyle = this.borderColor;
+            ctx.lineWidth = 3;
+            ctx.strokeText(this.text, this.x, this.y);
+        }
+
+        ctx.fillStyle = this.color;
         ctx.shadowColor = this.color;
         ctx.shadowBlur = 5;
         ctx.fillText(this.text, this.x, this.y);
@@ -365,10 +374,35 @@ class Projectile {
         this.x = x;
         this.y = y;
         this.speed = 300;
-        this.radius = 5;
+        this.radius = 5 * (game.player.projectileSize || 1); // Amplifier Core effect
         this.damage = game.player.damage; // Use player damage
+
+        // Debug: Check initial damage
+        if (isNaN(this.damage)) {
+            console.error("Projectile created with NaN damage!", { playerDamage: game.player.damage, player: game.player });
+        }
+
         this.markedForDeletion = false;
         this.color = '#ffff00';
+        this.isCrit = false; // Lucky Dice: Critical hit flag
+
+        // Lucky Dice: Critical hit chance
+        if (game.player.critChance && Math.random() < game.player.critChance) {
+            this.isCrit = true;
+            this.damage *= 2; // Critical damage is 2x
+            // this.color = '#ff8800'; // REMOVED: Keep original bullet color
+
+            // Debug: Check damage after crit
+            if (isNaN(this.damage)) {
+                console.error("Projectile damage became NaN after crit calculation!", { damage: this.damage });
+            }
+        }
+
+        // Safeguard: Ensure damage is a valid number
+        if (isNaN(this.damage)) {
+            console.warn("Projectile damage was NaN, resetting to default 10");
+            this.damage = 10;
+        }
 
         // Calculate direction to target
         const dx = target.x - x;
@@ -405,6 +439,87 @@ class Projectile {
 }
 
 
+// --- js/game/entities/PiercingProjectile.js ---
+class PiercingProjectile {
+    constructor(game, x, y, target, angleOffset = 0) {
+        this.game = game;
+        this.x = x;
+        this.y = y;
+        this.speed = 250; // Slightly slower than normal
+        this.radius = 7; // Slightly larger
+        this.damage = game.player.damage * 0.8; // 80% damage for balance
+        this.markedForDeletion = false;
+        this.color = '#00aaff'; // Cyan/blue color
+        this.isCrit = false; // Lucky Dice: Critical hit flag
+        this.hitEnemies = new Set(); // Track hit enemies to avoid multiple hits
+
+        // Lucky Dice: Critical hit chance
+        if (game.player.critChance && Math.random() < game.player.critChance) {
+            this.isCrit = true;
+            this.damage *= 2; // Critical damage is 2x
+        }
+
+        // Safeguard: Ensure damage is a valid number
+        if (isNaN(this.damage)) {
+            console.warn("PiercingProjectile damage was NaN, resetting to default 8");
+            this.damage = 8;
+        }
+
+        // Calculate direction to target
+        const dx = target.x - x;
+        const dy = target.y - y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Base angle
+        let angle = Math.atan2(dy, dx);
+
+        // Apply offset
+        angle += angleOffset;
+
+        this.vx = Math.cos(angle) * this.speed;
+        this.vy = Math.sin(angle) * this.speed;
+    }
+
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        // Check world bounds instead of canvas bounds
+        if (this.x < 0 || this.x > this.game.worldWidth ||
+            this.y < 0 || this.y > this.game.worldHeight) {
+            this.markedForDeletion = true;
+        }
+    }
+
+    draw(ctx) {
+        // Outer glow
+        ctx.save();
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner core
+        ctx.shadowBlur = 5;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    hasHit(enemyId) {
+        return this.hitEnemies.has(enemyId);
+    }
+
+    markHit(enemyId) {
+        this.hitEnemies.add(enemyId);
+    }
+}
+
+
 // --- js/game/entities/Missile.js ---
 
 
@@ -417,7 +532,7 @@ class Missile extends Projectile {
         // Missile Stats
         this.speed = 450;
         this.turnSpeed = 5.0; // Radians per second
-        this.damage = game.player.damage * 3.0;
+        this.damage = game.player.damage * 0.5;
         this.color = '#ff0088';
         this.radius = 8;
         this.lifeTime = 2.5;
@@ -1605,8 +1720,25 @@ class KamikazeEnemy extends Enemy {
 
     explode() {
         this.markedForDeletion = true;
-        this.game.player.hp -= this.damage;
-        this.game.showDamage(this.game.player.x, this.game.player.y, this.damage, '#ffaa00');
+        let dmg = this.damage * (this.game.player.damageMultiplier || 1.0); // Titanium Plating effect
+
+        // Energy Barrier: Shield absorbs damage first
+        if (this.game.player.shield && this.game.player.shield > 0) {
+            const shieldAbsorb = Math.min(this.game.player.shield, dmg);
+            this.game.player.shield -= shieldAbsorb;
+            dmg -= shieldAbsorb;
+            if (shieldAbsorb > 0) {
+                this.game.showDamage(this.game.player.x, this.game.player.y - 20, Math.round(shieldAbsorb), '#8888ff');
+            }
+        }
+
+        // Reset shield regeneration timer on hit
+        if (this.game.player.shieldRegenTimer !== undefined) {
+            this.game.player.shieldRegenTimer = 0;
+        }
+
+        this.game.player.hp -= dmg;
+        this.game.showDamage(this.game.player.x, this.game.player.y, Math.round(dmg), '#ffaa00');
 
         // Explosion visual
         for (let i = 0; i < 20; i++) {
@@ -1832,13 +1964,36 @@ class Chest {
     }
 
     generateRewards() {
-        // Access relics from UIManager via Game
-        // Note: This assumes UIManager is initialized. If not, we might need a static list or callback.
-        // Since Chest is created in startRun, UI should be ready.
         if (!this.game.ui || !this.game.ui.relics) return [];
 
-        const shuffled = [...this.game.ui.relics].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 3);
+        const selected = [];
+        const available = [...this.game.ui.relics];
+
+        // 3つのアイテムを選択
+        for (let i = 0; i < 3 && available.length > 0; i++) {
+            // 残っているアイテムの合計weightを計算
+            const totalWeight = available.reduce((sum, r) => sum + r.weight, 0);
+            let random = Math.random() * totalWeight;
+
+            // weightに基づいて選択
+            let selectedRelic = null;
+            for (const relic of available) {
+                random -= relic.weight;
+                if (random <= 0) {
+                    selectedRelic = relic;
+                    break;
+                }
+            }
+
+            // 選択したアイテムを追加し、リストから削除
+            if (selectedRelic) {
+                selected.push(selectedRelic);
+                const index = available.findIndex(r => r.id === selectedRelic.id);
+                if (index !== -1) available.splice(index, 1);
+            }
+        }
+
+        return selected;
     }
 
     update(dt) {
@@ -2872,6 +3027,7 @@ class NextStageAltar {
 
 
 
+
 class Player {
     constructor(game, x, y) {
         this.game = game;
@@ -2932,6 +3088,7 @@ class Player {
         }
         this.hp = this.maxHp;
         this.charType = charType;
+        console.log(`Player initialized: ${charType}, Damage: ${this.damage}`);
     }
 
     update(dt) {
@@ -2996,14 +3153,40 @@ class Player {
     shoot(target) {
         this.game.audio.playShoot(); // Sound effect
 
+        // Calculate base shots (1 for normal, 3 for dog)
+        let baseShots = [];
         if (this.charType === 'dog') {
             // Dog Skill: 3-way shot
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, 0));
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, 0.2)); // +angle
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, -0.2)); // -angle
+            baseShots = [0, 0.2, -0.2];
         } else {
             // Normal shot
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, 0));
+            baseShots = [0];
+        }
+
+        // Splitter Module: Add extra shots with wider angles
+        if (this.multiShotCount && this.multiShotCount > 1) {
+            const extraShots = this.multiShotCount - 1;
+            const angleStep = 0.15; // Spread angle between extra shots
+
+            for (let i = 0; i < extraShots; i++) {
+                const angleOffset = angleStep * (i + 1);
+                baseShots.push(angleOffset);
+                baseShots.push(-angleOffset);
+            }
+        }
+
+        // Fire all shots
+        baseShots.forEach(angle => {
+            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, angle));
+        });
+
+        // Plasma Orb: Fire piercing projectiles
+        if (this.pierceShotCount && this.pierceShotCount > 0) {
+            for (let i = 0; i < this.pierceShotCount; i++) {
+                // Offset piercing shots slightly to avoid complete overlap
+                const pierceAngle = i * 0.05;
+                this.projectiles.push(new PiercingProjectile(this.game, this.x, this.y, target, pierceAngle));
+            }
         }
     }
 
@@ -3433,14 +3616,14 @@ class WaveManager {
             this.spawnTimer += dt;
 
             // RoR2 Style Difficulty Scaling
-            // Difficulty increases by 30% every 60 seconds (以前は50%)
+            // Difficulty increases by 60% every 60 seconds (大幅強化: 0.3→0.6)
             // Base difficulty is set in constructor (increases with loops)
-            const timeScaling = 1.0 + (this.time / 60.0) * 0.3;
+            const timeScaling = 1.0 + (this.time / 60.0) * 0.6;
             this.difficulty = this.initialDifficulty * timeScaling;
 
             // Spawn Interval decreases with difficulty
-            // Base 1.5s -> limit to 0.2s
-            const currentInterval = Math.max(0.2, 1.5 / Math.sqrt(this.difficulty));
+            // Base 2.0s -> limit to 0.3s (以前は1.5s -> 0.2s)
+            const currentInterval = Math.max(0.3, 2.0 / Math.sqrt(this.difficulty));
 
             if (this.spawnTimer >= currentInterval) {
                 this.spawnEnemy();
@@ -3478,11 +3661,22 @@ class WaveManager {
     }
 
     spawnEnemy() {
+        // Enemy Count Limit: Cap at 40 enemies to prevent performance issues
+        const MAX_ENEMIES = 40;
+        if (this.enemies.length >= MAX_ENEMIES) {
+            return; // Skip spawning if at capacity
+        }
+
         // Spawn Count scales with difficulty
         // Cap at 5 per interval to prevent performance kill
         const spawnCount = Math.min(5, Math.floor(this.difficulty));
 
         for (let i = 0; i < spawnCount; i++) {
+            // Check again inside loop to prevent overshooting the limit
+            if (this.enemies.length >= MAX_ENEMIES) {
+                break;
+            }
+
             // Spawn around player (outside camera view)
             const angle = Math.random() * Math.PI * 2;
             const dist = 500 + Math.random() * 200; // Outside screen
@@ -3577,16 +3771,19 @@ class WaveManager {
                 enemyType = new RandomEnemy(this.game, x, y);
             }
 
+
             // Apply Difficulty Scaling
-            enemyType.hp *= this.difficulty;
-            enemyType.maxHp *= this.difficulty;
+            // HP: 時間経過で指数的に上昇（序盤は控えめ、後半は大きく）
+            // difficulty^1.5 で序盤を緩やかに（1.8→1.5に調整）
+            const hpScaling = Math.pow(this.difficulty, 1.5);
+            enemyType.hp *= hpScaling;
+            enemyType.maxHp *= hpScaling;
+
+            // Damage: 線形スケーリングのまま（HPほど上げない）
             enemyType.damage *= this.difficulty;
 
-            // Map Level Scaling
-            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.15;
-            enemyType.hp *= stageMultiplier;
-            enemyType.maxHp *= stageMultiplier;
-            enemyType.damage *= stageMultiplier;
+            // Map Level Scaling: 廃止
+
 
             this.enemies.push(enemyType);
         }
@@ -3602,15 +3799,33 @@ class UIManager {
         this.screens = {};
 
         // Relic Data (Moved from ShopSystem)
+        // レアリティ: common (70%), rare (20%), epic (8%), legendary (2%)
         this.relics = [
-            { id: 'atk_up', name: 'Cyber Katana', desc: 'Attack Damage +20%', cost: 15, color: '#ff4444', effect: (p) => p.damage *= 1.2 },
-            { id: 'spd_up', name: 'Neko Headphones', desc: 'Move Speed +15%', cost: 20, color: '#4444ff', effect: (p) => p.speed *= 1.15 },
-            { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 25, color: '#44ff44', effect: (p) => { p.maxHp += 30; p.hp += 30; } },
-            { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 18, color: '#ffaa00', effect: (p) => p.shootInterval *= 0.9 },
-            { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 12, color: '#00ffff', effect: (p) => { /* Handled in Drop */ } },
-            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 40, color: '#00ffaa', effect: (p) => p.game.addDrone() },
-            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 50, color: '#ff0088', effect: (p) => p.missileCount++ },
-            { id: 'full_heal', name: 'Emergency Repair', desc: 'Fully Restores HP', cost: 100, color: '#ff00ff', effect: (p) => p.hp = p.maxHp }
+            // Common (コモン) - 基本的な強化
+            { id: 'atk_up', name: 'Cyber Katana', desc: 'Attack Damage +10%', cost: 15, rarity: 'common', color: '#ff4444', rarityBorder: '#888888', weight: 5, effect: (p) => p.damage *= 1.1 },
+            { id: 'spd_up', name: 'Neko Headphones', desc: 'Move Speed +15%', cost: 20, rarity: 'common', color: '#4444ff', rarityBorder: '#888888', weight: 5, effect: (p) => p.speed *= 1.15 },
+            { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 25, rarity: 'common', color: '#44ff44', rarityBorder: '#888888', weight: 5, effect: (p) => { p.maxHp += 30; p.hp += 30; } },
+            { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 18, rarity: 'common', color: '#ffaa00', rarityBorder: '#888888', weight: 5, effect: (p) => p.shootInterval *= 0.9 },
+            { id: 'pierce_shot', name: 'Plasma Orb', desc: 'Fire penetrating orbs +1', cost: 20, rarity: 'common', color: '#00aaff', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.pierceShotCount) p.pierceShotCount = 0; p.pierceShotCount++; } },
+            { id: 'hp_regen', name: 'Nano Repair', desc: 'HP Regen +0.5/sec', cost: 22, rarity: 'common', color: '#44ff88', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 0.5; } },
+            { id: 'crit_chance', name: 'Lucky Dice', desc: 'Crit Chance +10%', cost: 18, rarity: 'common', color: '#ffdd00', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.1; } },
+            { id: 'projectile_size', name: 'Amplifier Core', desc: 'Projectile Size +25%', cost: 16, rarity: 'common', color: '#ff6600', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.25; } },
+
+            // Rare (レア) - 便利な強化
+            { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 12, rarity: 'rare', color: '#00ffff', rarityBorder: '#4466ff', weight: 6, effect: (p) => { /* Handled in Drop */ } },
+            { id: 'shield_gen', name: 'Energy Barrier', desc: 'Shield absorbs 20 damage', cost: 35, rarity: 'rare', color: '#8888ff', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.shield) p.shield = 0; p.shield += 20; if (!p.maxShield) p.maxShield = 0; p.maxShield += 20; } },
+            { id: 'multishot', name: 'Splitter Module', desc: 'Shoot 2 extra bullets', cost: 40, rarity: 'rare', color: '#ff4488', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.multiShotCount) p.multiShotCount = 1; p.multiShotCount += 1; } },
+            { id: 'armor_plate', name: 'Titanium Plating', desc: 'Damage taken -15%', cost: 38, rarity: 'rare', color: '#999999', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.85; } },
+
+            // Epic (エピック) - 強力な強化
+            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 40, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 7, effect: (p) => p.game.addDrone() },
+            { id: 'lifesteal', name: 'Vampire Fang', desc: 'Heal 10% of damage dealt', cost: 50, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 7, effect: (p) => { if (!p.lifeSteal) p.lifeSteal = 0; p.lifeSteal += 0.10; } },
+            { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 55, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 6, effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
+            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 50, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 7, effect: (p) => p.missileCount++ },
+
+            // Legendary (レジェンダリー) - 超強力
+            { id: 'phoenix_heart', name: 'Phoenix Heart', desc: 'Revive once on death', cost: 80, rarity: 'legendary', color: '#ffaa00', rarityBorder: '#ff8800', weight: 5, effect: (p) => { if (!p.reviveCount) p.reviveCount = 0; p.reviveCount++; } },
+            { id: 'phoenix_heart_used', name: 'Phoenix Heart (Used)', desc: 'Already consumed', cost: 0, rarity: 'legendary', color: '#666666', rarityBorder: '#444444', weight: 0, effect: (p) => { /* No effect */ } }
         ];
 
         this.setupScreens();
@@ -3677,6 +3892,7 @@ class UIManager {
                 <div class="hud-left">
                     <div class="hud-hp-ene-row">
                         <div class="bar-container">
+                            <div id="shield-bar" class="bar shield"></div>
                             <div id="hp-bar" class="bar hp"></div>
                             <span id="hp-text" class="bar-text">100/100</span>
                         </div>
@@ -3734,6 +3950,12 @@ class UIManager {
                         <p class="result-big-text">10 / 10</p>
                     </div>
                     <div class="result-section">
+                        <h3>Character Used</h3>
+                        <div style="display: flex; justify-content: center; align-items: center; height: 60px; width: 100%;">
+                            <canvas id="victory-character" width="50" height="50" style="width: 50px; height: 50px; display: block;"></canvas>
+                        </div>
+                    </div>
+                    <div class="result-section">
                         <h3>Defeated Enemies</h3>
                         <div id="victory-enemies" class="result-grid"></div>
                     </div>
@@ -3751,8 +3973,18 @@ class UIManager {
             <h2 style="color: #ff0000;">GAME OVER</h2>
             <div class="result-stats-container">
                 <div class="result-section">
+                    <h3>Reached Stage</h3>
+                    <p class="result-big-text"><span id="go-level">1</span></p>
+                </div>
+                <div class="result-section">
                     <h3>Total Ene</h3>
                     <p class="result-big-text"><span id="go-ene">0</span></p>
+                </div>
+                <div class="result-section">
+                    <h3>Character Used</h3>
+                    <div style="display: flex; justify-content: center; align-items: center; height: 60px; width: 100%;">
+                        <canvas id="go-character" width="50" height="50" style="width: 50px; height: 50px; display: block;"></canvas>
+                    </div>
                 </div>
                 <div class="result-section">
                     <h3>Defeated Enemies</h3>
@@ -3980,6 +4212,10 @@ class UIManager {
 
             card.appendChild(iconCanvas);
 
+            // Set rarity border color
+            card.style.borderColor = relic.rarityBorder;
+            card.style.borderWidth = '3px';
+
             // Calculate scaled cost
             const scaledCost = Math.floor(relic.cost * costMultiplier);
 
@@ -4127,6 +4363,242 @@ class UIManager {
             ctx.lineTo(cx, cy + 5);
             ctx.lineTo(cx - 8, cy + 10);
             ctx.fill();
+        } else if (id === 'pierce_shot') {
+            // Plasma Orb (貫通弾)
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.fill();
+            // Inner glow
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+            ctx.fill();
+            // Energy trails
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(cx - 15 - i * 3, cy);
+                ctx.lineTo(cx - 10 - i * 3, cy);
+                ctx.stroke();
+            }
+        } else if (id === 'hp_regen') {
+            // Nano Repair (HP回復)
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.stroke();
+            // Plus sign
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(cx - 6, cy);
+            ctx.lineTo(cx + 6, cy);
+            ctx.moveTo(cx, cy - 6);
+            ctx.lineTo(cx, cy + 6);
+            ctx.stroke();
+            // Pulse rings
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+            ctx.stroke();
+        } else if (id === 'crit_chance') {
+            // Lucky Dice (クリティカル)
+            ctx.strokeRect(cx - 10, cy - 10, 20, 20);
+            ctx.fillRect(cx - 10, cy - 10, 20, 20);
+            // Dots
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(cx - 4, cy - 4, 2, 0, Math.PI * 2);
+            ctx.arc(cx + 4, cy + 4, 2, 0, Math.PI * 2);
+            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+            ctx.fill();
+            // Star sparkle
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(cx + 8, cy - 8);
+            ctx.lineTo(cx + 10, cy - 10);
+            ctx.lineTo(cx + 12, cy - 8);
+            ctx.lineTo(cx + 10, cy - 6);
+            ctx.fill();
+        } else if (id === 'projectile_size') {
+            // Amplifier Core (弾サイズ)
+            ctx.beginPath();
+            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+            ctx.fill();
+            // Expanding waves
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+            ctx.stroke();
+            // Arrow indicators
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(cx - 8, cy);
+            ctx.lineTo(cx - 14, cy);
+            ctx.lineTo(cx - 11, cy - 3);
+            ctx.moveTo(cx - 14, cy);
+            ctx.lineTo(cx - 11, cy + 3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + 8, cy);
+            ctx.lineTo(cx + 14, cy);
+            ctx.lineTo(cx + 11, cy - 3);
+            ctx.moveTo(cx + 14, cy);
+            ctx.lineTo(cx + 11, cy + 3);
+            ctx.stroke();
+        } else if (id === 'shield_gen') {
+            // Energy Barrier (シールド)
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 15);
+            ctx.lineTo(cx + 12, cy - 5);
+            ctx.lineTo(cx + 12, cy + 10);
+            ctx.lineTo(cx, cy + 15);
+            ctx.lineTo(cx - 12, cy + 10);
+            ctx.lineTo(cx - 12, cy - 5);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+            // Inner shield pattern
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 10);
+            ctx.lineTo(cx + 8, cy - 2);
+            ctx.lineTo(cx + 8, cy + 8);
+            ctx.lineTo(cx, cy + 12);
+            ctx.lineTo(cx - 8, cy + 8);
+            ctx.lineTo(cx - 8, cy - 2);
+            ctx.closePath();
+            ctx.stroke();
+        } else if (id === 'multishot') {
+            // Splitter Module (マルチショット)
+            ctx.lineWidth = 3;
+            // Main beam
+            ctx.beginPath();
+            ctx.moveTo(cx - 15, cy);
+            ctx.lineTo(cx - 5, cy);
+            ctx.stroke();
+            // Split arrows
+            ctx.beginPath();
+            ctx.moveTo(cx - 5, cy);
+            ctx.lineTo(cx + 10, cy - 8);
+            ctx.lineTo(cx + 15, cy - 8);
+            ctx.lineTo(cx + 12, cy - 11);
+            ctx.moveTo(cx + 15, cy - 8);
+            ctx.lineTo(cx + 12, cy - 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx - 5, cy);
+            ctx.lineTo(cx + 10, cy);
+            ctx.lineTo(cx + 15, cy);
+            ctx.lineTo(cx + 12, cy - 3);
+            ctx.moveTo(cx + 15, cy);
+            ctx.lineTo(cx + 12, cy + 3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx - 5, cy);
+            ctx.lineTo(cx + 10, cy + 8);
+            ctx.lineTo(cx + 15, cy + 8);
+            ctx.lineTo(cx + 12, cy + 5);
+            ctx.moveTo(cx + 15, cy + 8);
+            ctx.lineTo(cx + 12, cy + 11);
+            ctx.stroke();
+        } else if (id === 'armor_plate') {
+            // Titanium Plating (防御)
+            ctx.fillRect(cx - 12, cy - 10, 24, 20);
+            // Rivets
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(cx - 8, cy - 6, 2, 0, Math.PI * 2);
+            ctx.arc(cx + 8, cy - 6, 2, 0, Math.PI * 2);
+            ctx.arc(cx - 8, cy + 6, 2, 0, Math.PI * 2);
+            ctx.arc(cx + 8, cy + 6, 2, 0, Math.PI * 2);
+            ctx.fill();
+            // Armor lines
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx - 10, cy);
+            ctx.lineTo(cx + 10, cy);
+            ctx.stroke();
+        } else if (id === 'lifesteal') {
+            // Vampire Fang (ライフスティール)
+            ctx.beginPath();
+            ctx.arc(cx, cy + 5, 10, Math.PI, 0);
+            ctx.fill();
+            // Fangs
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(cx - 5, cy + 5);
+            ctx.lineTo(cx - 3, cy + 12);
+            ctx.lineTo(cx - 1, cy + 5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + 1, cy + 5);
+            ctx.lineTo(cx + 3, cy + 12);
+            ctx.lineTo(cx + 5, cy + 5);
+            ctx.fill();
+            // Blood drops
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(cx - 3, cy + 14, 2, 0, Math.PI * 2);
+            ctx.arc(cx + 3, cy + 14, 2, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (id === 'time_warp') {
+            // Chrono Lens (時間加速)
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.stroke();
+            // Clock hands
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, cy - 8);
+            ctx.stroke();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + 6, cy);
+            ctx.stroke();
+            // Speed lines
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + 15, cy - 5);
+            ctx.lineTo(cx + 20, cy - 5);
+            ctx.moveTo(cx + 15, cy + 5);
+            ctx.lineTo(cx + 20, cy + 5);
+            ctx.stroke();
+        } else if (id === 'phoenix_heart' || id === 'phoenix_heart_used') {
+            // Phoenix Heart (復活) - same design for both active and used versions
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + 10);
+            ctx.bezierCurveTo(cx - 8, cy + 2, cx - 12, cy - 6, cx, cy - 12);
+            ctx.bezierCurveTo(cx + 12, cy - 6, cx + 8, cy + 2, cx, cy + 10);
+            ctx.fill();
+            // Flame effect
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 8);
+            ctx.lineTo(cx - 2, cy - 4);
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(cx + 2, cy - 4);
+            ctx.closePath();
+            ctx.fill();
+            // Phoenix wings
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx - 8, cy);
+            ctx.lineTo(cx - 14, cy - 8);
+            ctx.lineTo(cx - 10, cy - 12);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + 8, cy);
+            ctx.lineTo(cx + 14, cy - 8);
+            ctx.lineTo(cx + 10, cy - 12);
+            ctx.stroke();
         } else {
             // Default Circle
             ctx.beginPath();
@@ -4145,13 +4617,32 @@ class UIManager {
         }
     }
 
-    updateHUD(hpPercent, ene, currentHp, maxHp, time, difficulty) {
+    updateHUD(hpPercent, ene, currentHp, maxHp, time, difficulty, currentShield = 0, maxShield = 0) {
         document.getElementById('hp-bar').style.width = `${hpPercent}%`;
+
+        // Update Shield Bar
+        const shieldBar = document.getElementById('shield-bar');
+        if (shieldBar) {
+            console.log('Shield Debug:', { currentShield, maxShield, shieldBar });
+            if (maxShield > 0) {
+                const shieldPercent = (currentShield / maxShield) * 100;
+                shieldBar.style.width = `${shieldPercent}%`;
+                shieldBar.style.display = 'block';
+                console.log('Shield Bar Updated:', shieldPercent + '%', shieldBar.style.width);
+            } else {
+                shieldBar.style.display = 'none';
+            }
+        }
+
         document.getElementById('score-ene').innerText = ene;
 
-        // Update HP Text
+        // Update HP Text (with shield)
         if (currentHp !== undefined && maxHp !== undefined) {
-            document.getElementById('hp-text').innerText = `${Math.ceil(currentHp)}/${Math.ceil(maxHp)}`;
+            let hpText = `${Math.ceil(currentHp)}/${Math.ceil(maxHp)}`;
+            if (maxShield > 0) {
+                hpText += ` (+${Math.ceil(currentShield)})`;
+            }
+            document.getElementById('hp-text').innerText = hpText;
         }
 
         // Update Time
@@ -4232,17 +4723,18 @@ class UIManager {
     updateGameOverStats(ene, killCount, relics, mapLevel) {
         document.getElementById('go-ene').innerText = ene;
 
-        // Display Map Level (Create element if not exists)
-        let levelDisplay = document.getElementById('go-level');
-        if (!levelDisplay) {
-            const container = document.querySelector('.result-stats-container');
-            const section = document.createElement('div');
-            section.className = 'result-section';
-            section.innerHTML = `<h3>Reached Stage</h3><p class="result-big-text"><span id="go-level">1</span></p>`;
-            container.insertBefore(section, container.firstChild);
-            levelDisplay = document.getElementById('go-level');
+        // Display Map Level
+        const levelDisplay = document.getElementById('go-level');
+        if (levelDisplay) {
+            levelDisplay.innerText = mapLevel;
         }
-        levelDisplay.innerText = mapLevel;
+
+        // Draw Player Character
+        const charCanvas = document.getElementById('go-character');
+        if (charCanvas) {
+            const ctx = charCanvas.getContext('2d');
+            this.drawPlayerCharacter(ctx, this.game.selectedCharacter, 25, 25);
+        }
 
         // Enemies
         const enemyContainer = document.getElementById('go-enemies');
@@ -4256,7 +4748,13 @@ class UIManager {
             'totem': { color: '#ff00ff', name: 'Totem' },
             'kamikaze': { color: '#ffaa00', name: 'Kamikaze' },
             'missile_enemy': { color: '#ff0088', name: 'Missile Bot' },
-            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' }
+            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' },
+            // Bosses
+            'overlord': { color: '#ff00ff', name: 'Overlord', isBoss: true },
+            'slime_king': { color: '#00ff88', name: 'Slime King', isBoss: true },
+            'mecha_golem': { color: '#ff4444', name: 'Mecha Golem', isBoss: true },
+            'void_phantom': { color: '#8800ff', name: 'Void Phantom', isBoss: true },
+            'crimson_dragon': { color: '#ff0000', name: 'Crimson Dragon', isBoss: true }
         };
 
         for (const [type, count] of Object.entries(killCount)) {
@@ -4274,7 +4772,12 @@ class UIManager {
             canvas.height = 40;
             canvas.className = 'result-item-icon';
             const ctx = canvas.getContext('2d');
-            this.drawEnemyIcon(ctx, type, data.color);
+
+            if (data.isBoss) {
+                this.drawBossIcon(ctx, type, data.color);
+            } else {
+                this.drawEnemyIcon(ctx, type, data.color);
+            }
 
             wrapper.appendChild(canvas);
 
@@ -4326,31 +4829,335 @@ class UIManager {
         const cy = 20;
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
-
-        // Scale down slightly (0.8x)
-        const s = 0.8;
+        ctx.lineWidth = 2;
 
         if (type === 'slime') {
-            ctx.beginPath(); ctx.arc(cx, cy, 10 * s, 0, Math.PI * 2); ctx.fill();
+            // Slime: Blob shape with highlights
+            ctx.beginPath();
+            ctx.arc(cx, cy + 2, 12, 0, Math.PI * 2);
+            ctx.fill();
+            // Highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.beginPath();
+            ctx.arc(cx - 3, cy - 2, 4, 0, Math.PI * 2);
+            ctx.fill();
         } else if (type === 'kamikaze') {
-            // Spiky
+            // Kamikaze: Spiky ball
             ctx.beginPath();
             for (let i = 0; i < 8; i++) {
                 const a = (Math.PI * 2 * i) / 8;
-                const r = (i % 2 === 0 ? 12 : 6) * s;
-                ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+                const r = (i % 2 === 0 ? 14 : 8);
+                if (i === 0) ctx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+                else ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
             }
+            ctx.closePath();
+            ctx.fill();
+            // Center core
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, Math.PI * 2);
             ctx.fill();
         } else if (type === 'golem') {
-            ctx.fillRect(cx - 10 * s, cy - 10 * s, 20 * s, 20 * s);
-        } else if (type === 'lizard') {
+            // Golem: Solid square with details
+            ctx.fillRect(cx - 10, cy - 10, 20, 20);
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(cx - 6, cy - 4, 3, 3);
+            ctx.fillRect(cx + 3, cy - 4, 3, 3);
+            // Cracks
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(cx + 10 * s, cy);
-            ctx.lineTo(cx - 10 * s, cy + 8 * s);
-            ctx.lineTo(cx - 10 * s, cy - 8 * s);
+            ctx.moveTo(cx - 10, cy + 5);
+            ctx.lineTo(cx + 10, cy + 5);
+            ctx.stroke();
+        } else if (type === 'lizard') {
+            // Lizard: Triangle with tail
+            ctx.beginPath();
+            ctx.moveTo(cx + 12, cy);
+            ctx.lineTo(cx - 8, cy + 10);
+            ctx.lineTo(cx - 8, cy - 10);
+            ctx.closePath();
+            ctx.fill();
+            // Tail
+            ctx.beginPath();
+            ctx.moveTo(cx - 8, cy);
+            ctx.quadraticCurveTo(cx - 14, cy - 4, cx - 12, cy);
+            ctx.quadraticCurveTo(cx - 14, cy + 4, cx - 8, cy);
+            ctx.fill();
+        } else if (type === 'totem') {
+            // Totem: Vertical rectangles stacked
+            ctx.fillRect(cx - 8, cy - 12, 16, 8);
+            ctx.fillRect(cx - 6, cy - 4, 12, 16);
+            // Eyes on top
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(cx - 5, cy - 10, 3, 3);
+            ctx.fillRect(cx + 2, cy - 10, 3, 3);
+        } else if (type === 'missile_enemy') {
+            // Missile Enemy: Robot with launcher
+            ctx.fillRect(cx - 8, cy - 8, 16, 16);
+            // Launcher
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(cx - 2, cy - 12, 4, 8);
+            // Eyes
+            ctx.fillStyle = color;
+            ctx.fillRect(cx - 5, cy - 2, 3, 3);
+            ctx.fillRect(cx + 2, cy - 2, 3, 3);
+        } else if (type === 'beam_enemy') {
+            // Beam Enemy: Robot with beam emitter
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.fill();
+            // Beam emitter (triangle)
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 10);
+            ctx.lineTo(cx - 4, cy - 4);
+            ctx.lineTo(cx + 4, cy - 4);
+            ctx.closePath();
             ctx.fill();
         } else {
-            ctx.beginPath(); ctx.arc(cx, cy, 10 * s, 0, Math.PI * 2); ctx.stroke();
+            // Default: Circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+
+    drawPlayerCharacter(ctx, charType, cx, cy) {
+        ctx.clearRect(0, 0, 50, 50);
+
+        const radius = 15;
+        let color = '#fff';
+        if (charType === 'girl') color = '#ff00ff';
+        if (charType === 'cat') color = '#00ffff';
+        if (charType === 'boy') color = '#00ff00';
+        if (charType === 'dog') color = '#ff8800';
+
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        // Glow
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+
+        // Body
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Inner
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+
+        // Accessories
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        if (charType === 'cat') {
+            ctx.beginPath(); ctx.moveTo(-8, -12); ctx.lineTo(-12, -20); ctx.lineTo(-4, -14); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(8, -12); ctx.lineTo(12, -20); ctx.lineTo(4, -14); ctx.stroke();
+        } else if (charType === 'girl') {
+            ctx.beginPath(); ctx.arc(0, -12, 4, 0, Math.PI * 2); ctx.fill();
+        } else if (charType === 'dog') {
+            ctx.beginPath(); ctx.ellipse(-12, -4, 4, 8, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(12, -4, 4, 8, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+        } else if (charType === 'boy') {
+            ctx.beginPath(); ctx.arc(0, -4, radius, Math.PI, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(18, -4); ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    drawBossIcon(ctx, type, color) {
+        const cx = 20;
+        const cy = 20;
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+
+        if (type === 'overlord') {
+            // Overlord: Evil sorcerer with tentacles
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Horns
+            ctx.fillStyle = '#ff00ff';
+            ctx.beginPath();
+            ctx.moveTo(cx - 8, cy - 8);
+            ctx.lineTo(cx - 12, cy - 16);
+            ctx.lineTo(cx - 6, cy - 10);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + 8, cy - 8);
+            ctx.lineTo(cx + 12, cy - 16);
+            ctx.lineTo(cx + 6, cy - 10);
+            ctx.fill();
+
+            // Evil eyes
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(cx - 4, cy - 2, 2, 0, Math.PI * 2);
+            ctx.arc(cx + 4, cy - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tentacles
+            ctx.strokeStyle = '#aa00aa';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cx - 10, cy + 8);
+            ctx.quadraticCurveTo(cx - 14, cy + 12, cx - 12, cy + 16);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + 10, cy + 8);
+            ctx.quadraticCurveTo(cx + 14, cy + 12, cx + 12, cy + 16);
+            ctx.stroke();
+
+        } else if (type === 'slime_king') {
+            // Slime King: Large slime with crown
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 3, 14, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shine/highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.beginPath();
+            ctx.arc(cx - 4, cy - 1, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Crown
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.moveTo(cx - 10, cy - 8);
+            ctx.lineTo(cx - 7, cy - 14);
+            ctx.lineTo(cx - 3, cy - 10);
+            ctx.lineTo(cx, cy - 16);
+            ctx.lineTo(cx + 3, cy - 10);
+            ctx.lineTo(cx + 7, cy - 14);
+            ctx.lineTo(cx + 10, cy - 8);
+            ctx.lineTo(cx - 10, cy - 8);
+            ctx.fill();
+
+        } else if (type === 'mecha_golem') {
+            // Mecha Golem: Robot with mechanical parts
+            ctx.fillRect(cx - 12, cy - 10, 24, 20);
+
+            // Head antenna
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillRect(cx - 2, cy - 16, 4, 6);
+            ctx.beginPath();
+            ctx.arc(cx, cy - 16, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Glowing eye visor
+            ctx.fillStyle = '#00ffff';
+            ctx.fillRect(cx - 8, cy - 4, 16, 4);
+
+            // Shoulder cannons
+            ctx.fillStyle = color;
+            ctx.fillRect(cx - 14, cy - 6, 3, 8);
+            ctx.fillRect(cx + 11, cy - 6, 3, 8);
+
+            // Panel lines
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 10);
+            ctx.lineTo(cx, cy + 10);
+            ctx.stroke();
+
+        } else if (type === 'void_phantom') {
+            // Void Phantom: Ghostly, ethereal
+            // Wispy body
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, 12, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Trailing wisps
+            ctx.globalAlpha = 0.5;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.ellipse(cx - 5 + i * 5, cy + 10 + i * 3, 4, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.globalAlpha = 1.0;
+
+            // Hollow eyes
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(cx - 5, cy - 3, 3, 0, Math.PI * 2);
+            ctx.arc(cx + 5, cy - 3, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner glow in eyes
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(cx - 5, cy - 3, 1.5, 0, Math.PI * 2);
+            ctx.arc(cx + 5, cy - 3, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+        } else if (type === 'crimson_dragon') {
+            // Crimson Dragon: Dragon head with wings
+            // Head
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Horns
+            ctx.fillStyle = '#ff8800';
+            ctx.beginPath();
+            ctx.moveTo(cx - 6, cy - 8);
+            ctx.lineTo(cx - 10, cy - 14);
+            ctx.lineTo(cx - 4, cy - 10);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + 6, cy - 8);
+            ctx.lineTo(cx + 10, cy - 14);
+            ctx.lineTo(cx + 4, cy - 10);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(cx - 3, cy - 2, 2, 0, Math.PI * 2);
+            ctx.arc(cx + 3, cy - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(cx - 3, cy - 2, 1, 0, Math.PI * 2);
+            ctx.arc(cx + 3, cy - 2, 1, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Nostrils breathing fire
+            ctx.fillStyle = '#ffaa00';
+            ctx.beginPath();
+            ctx.arc(cx - 2, cy + 4, 1.5, 0, Math.PI * 2);
+            ctx.arc(cx + 2, cy + 4, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wings (simplified)
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(cx - 10, cy);
+            ctx.lineTo(cx - 18, cy - 8);
+            ctx.lineTo(cx - 14, cy + 4);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx + 10, cy);
+            ctx.lineTo(cx + 18, cy - 8);
+            ctx.lineTo(cx + 14, cy + 4);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
         }
     }
 
@@ -4471,6 +5278,7 @@ class Game {
         } else if (newState === 'title') {
             // Reset
         } else if (newState === 'home') {
+            this.mapLevel = 1; // Reset to stage 1 when returning home
             this.ui.updateHome();
         }
     }
@@ -4623,8 +5431,28 @@ class Game {
             this.floatingTexts = this.floatingTexts.filter(t => !t.markedForDeletion);
 
             this.obstacles.forEach(o => o.update(dt));
-
             this.drones.forEach(d => d.update(dt));
+
+            // HP Regeneration (Nano Repair)
+            if (this.player && this.player.hpRegen && this.player.hp < this.player.maxHp) {
+                this.player.hp = Math.min(this.player.maxHp, this.player.hp + this.player.hpRegen * dt);
+            }
+
+            // Shield Regeneration (Energy Barrier)
+            if (this.player && this.player.maxShield && this.player.maxShield > 0) {
+                // Initialize shield regen timer
+                if (this.player.shieldRegenTimer === undefined) {
+                    this.player.shieldRegenTimer = 0;
+                }
+
+                // Increment timer
+                this.player.shieldRegenTimer += dt;
+
+                // Regenerate shield after 5 seconds of not being hit
+                if (this.player.shieldRegenTimer >= 5.0 && this.player.shield < this.player.maxShield) {
+                    this.player.shield = Math.min(this.player.maxShield, this.player.shield + 10 * dt); // 10 shield/sec
+                }
+            }
 
             this.checkCollisions(dt);
 
@@ -4633,13 +5461,14 @@ class Game {
                 this.gameOver();
             }
 
+
             // Update HUD
             if (this.player && this.waveManager) {
                 const hpPercent = (this.player.hp / this.player.maxHp) * 100;
 
-                // Calculate effective difficulty for display
-                const mapMultiplier = 1 + (this.mapLevel - 1) * 0.5;
-                const effectiveDifficulty = this.waveManager.difficulty * mapMultiplier;
+
+                // Calculate effective difficulty for display (マップボーナス廃止)
+                const effectiveDifficulty = this.waveManager.difficulty;
 
                 this.ui.updateHUD(
                     hpPercent,
@@ -4647,7 +5476,9 @@ class Game {
                     this.player.hp,
                     this.player.maxHp,
                     this.waveManager.time,
-                    effectiveDifficulty
+                    effectiveDifficulty,
+                    this.player.shield || 0,
+                    this.player.maxShield || 0
                 );
             }
         }
@@ -4673,7 +5504,24 @@ class Game {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < enemy.radius + this.player.radius) {
-                const dmg = enemy.damage * dt; // Scale damage by dt
+                let dmg = enemy.damage * dt; // Scale damage by dt
+                dmg = dmg * (this.player.damageMultiplier || 1.0); // Titanium Plating effect
+
+                // Energy Barrier: Shield absorbs damage first
+                if (this.player.shield && this.player.shield > 0) {
+                    const shieldAbsorb = Math.min(this.player.shield, dmg);
+                    this.player.shield -= shieldAbsorb;
+                    dmg -= shieldAbsorb;
+                    if (shieldAbsorb > 0) {
+                        this.showDamage(this.player.x, this.player.y - 20, Math.round(shieldAbsorb), '#8888ff');
+                    }
+                }
+
+                // Reset shield regeneration timer on hit
+                if (this.player.shieldRegenTimer !== undefined) {
+                    this.player.shieldRegenTimer = 0;
+                }
+
                 this.player.hp -= dmg;
                 if (this.player.hp <= 0) {
                     this.gameOver();
@@ -4701,6 +5549,11 @@ class Game {
             this.waveManager.enemies.forEach(enemy => {
                 if (proj.markedForDeletion || enemy.markedForDeletion) return;
 
+                // For piercing projectiles, skip if already hit this enemy
+                if (proj.hasHit && proj.hasHit(enemy.id || enemy)) {
+                    return;
+                }
+
                 const dx = enemy.x - proj.x;
                 const dy = enemy.y - proj.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -4708,7 +5561,23 @@ class Game {
                 if (dist < enemy.radius + proj.radius) {
                     // Check if damage is taken
                     if (enemy.takeDamage(proj.damage)) {
-                        this.showDamage(enemy.x, enemy.y, Math.round(proj.damage), '#fff');
+                        // Debug: Check damage before display
+                        if (isNaN(proj.damage)) {
+                            console.error("Damage is NaN before display!", { projDamage: proj.damage, isCrit: proj.isCrit });
+                            proj.damage = 1; // Fallback to 1
+                        }
+
+                        let damageVal = Math.round(proj.damage);
+                        if (isNaN(damageVal)) damageVal = 1;
+
+                        // Always use standard display (White, no '!')
+                        const damageColor = '#fff';
+                        const damageText = damageVal;
+
+                        // Lucky Dice: Orange outline for critical hits
+                        const outlineColor = proj.isCrit ? '#ff8800' : null;
+
+                        this.showDamage(enemy.x, enemy.y, damageText, damageColor, outlineColor);
                         this.audio.playHit(); // Sound effect
 
                         // Spawn Particles
@@ -4718,19 +5587,39 @@ class Game {
 
                         if (enemy.hp <= 0) {
                             enemy.markedForDeletion = true;
-                            // Drop Scaling: Value based on Max HP
-                            const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10));
+
+                            // Vampire Fang: Life steal on kill
+                            if (this.player.lifeSteal) {
+                                const healAmount = proj.damage * this.player.lifeSteal;
+                                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                                this.showDamage(this.player.x, this.player.y - 30, '+' + Math.round(healAmount), '#00ff00');
+                            }
+
+                            // Drop Scaling: Value based on Max HP (1.2倍に増加)
+                            const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10 * 1.2));
                             this.drops.push(new Drop(this, enemy.x, enemy.y, 'energy', dropValue));
 
                             // Track Kill
                             if (!this.killCount[enemy.type]) this.killCount[enemy.type] = 0;
                             this.killCount[enemy.type]++;
                         }
+
+                        // For piercing projectiles, mark the enemy as hit instead of deleting the projectile
+                        if (proj.markHit) {
+                            proj.markHit(enemy.id || enemy);
+                        } else {
+                            // Normal projectile: mark for deletion
+                            proj.markedForDeletion = true;
+                        }
                     } else {
                         // Damage Blocked (Sound effect?)
                         this.audio.playHit(); // Maybe a different sound for block?
+
+                        // Non-piercing projectiles still get deleted on block
+                        if (!proj.markHit) {
+                            proj.markedForDeletion = true;
+                        }
                     }
-                    proj.markedForDeletion = true;
                 }
             });
         });
@@ -4743,18 +5632,35 @@ class Game {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < this.player.radius + proj.radius) {
-                this.player.hp -= proj.damage;
-                this.showDamage(this.player.x, this.player.y, Math.round(proj.damage), '#ff0000');
+                let dmg = proj.damage * (this.player.damageMultiplier || 1.0); // Titanium Plating effect
+
+                // Energy Barrier: Shield absorbs damage first
+                if (this.player.shield && this.player.shield > 0) {
+                    const shieldAbsorb = Math.min(this.player.shield, dmg);
+                    this.player.shield -= shieldAbsorb;
+                    dmg -= shieldAbsorb;
+                    if (shieldAbsorb > 0) {
+                        this.showDamage(this.player.x, this.player.y - 20, Math.round(shieldAbsorb), '#8888ff');
+                    }
+                }
+
+                // Reset shield regeneration timer on hit
+                if (this.player.shieldRegenTimer !== undefined) {
+                    this.player.shieldRegenTimer = 0;
+                }
+
+                this.player.hp -= dmg;
+                this.showDamage(this.player.x, this.player.y, Math.round(dmg), '#ff0000');
                 proj.markedForDeletion = true;
                 if (this.player.hp <= 0) {
-                    this.setState('result');
+                    this.gameOver();
                 }
             }
         });
     }
 
-    showDamage(x, y, amount, color) {
-        this.floatingTexts.push(new FloatingText(x, y, Math.round(amount), color));
+    showDamage(x, y, amount, color, outlineColor = null) {
+        this.floatingTexts.push(new FloatingText(x, y, amount, color, outlineColor));
     }
 
     openChest(chest) {
@@ -5189,6 +6095,13 @@ class Game {
         document.getElementById('victory-ene').innerText = this.totalEneCollected;
         document.getElementById('victory-money').innerText = bonusMoney;
 
+        // Draw Player Character
+        const charCanvas = document.getElementById('victory-character');
+        if (charCanvas) {
+            const ctx = charCanvas.getContext('2d');
+            this.ui.drawPlayerCharacter(ctx, this.selectedCharacter, 25, 25);
+        }
+
         // 敵の表示
         const enemyContainer = document.getElementById('victory-enemies');
         enemyContainer.innerHTML = '';
@@ -5200,7 +6113,13 @@ class Game {
             'totem': { color: '#ff00ff', name: 'Totem' },
             'kamikaze': { color: '#ffaa00', name: 'Kamikaze' },
             'missile_enemy': { color: '#ff0088', name: 'Missile Bot' },
-            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' }
+            'beam_enemy': { color: '#0088ff', name: 'Beam Bot' },
+            // Bosses
+            'overlord': { color: '#ff00ff', name: 'Overlord', isBoss: true },
+            'slime_king': { color: '#00ff88', name: 'Slime King', isBoss: true },
+            'mecha_golem': { color: '#ff4444', name: 'Mecha Golem', isBoss: true },
+            'void_phantom': { color: '#8800ff', name: 'Void Phantom', isBoss: true },
+            'crimson_dragon': { color: '#ff0000', name: 'Crimson Dragon', isBoss: true }
         };
 
         for (const [type, count] of Object.entries(this.killCount)) {
@@ -5218,7 +6137,12 @@ class Game {
             canvas.height = 40;
             canvas.className = 'result-item-icon';
             const ctx = canvas.getContext('2d');
-            this.ui.drawEnemyIcon(ctx, type, data.color);
+
+            if (data.isBoss) {
+                this.ui.drawBossIcon(ctx, type, data.color);
+            } else {
+                this.ui.drawEnemyIcon(ctx, type, data.color);
+            }
 
             wrapper.appendChild(canvas);
 
@@ -5271,6 +6195,39 @@ class Game {
     }
 
     gameOver() {
+        // Phoenix Heart: Check for revive before game over
+        const phoenixHeartIndex = this.acquiredRelics.findIndex(r => r.id === 'phoenix_heart');
+
+        if (phoenixHeartIndex !== -1) {
+            console.log("🔥 Phoenix Heart activated! Reviving player...");
+
+            // Remove Phoenix Heart from acquired relics
+            this.acquiredRelics.splice(phoenixHeartIndex, 1);
+
+            // Add used Phoenix Heart
+            const usedPhoenixHeart = this.ui.relics.find(r => r.id === 'phoenix_heart_used');
+            if (usedPhoenixHeart) {
+                this.acquiredRelics.push(usedPhoenixHeart);
+            }
+
+            // Update HUD to reflect the change
+            this.ui.updateAcquiredItems(this.acquiredRelics);
+
+            // Revive with 50% HP
+            this.player.hp = this.player.maxHp * 0.5;
+
+            // Visual feedback
+            this.ui.showMessage("💛 PHOENIX HEART ACTIVATED! 💛", 3000);
+            this.audio.playLevelUp(); // Revival sound
+
+            // Spawn particles for effect
+            for (let i = 0; i < 20; i++) {
+                this.particles.push(new Particle(this, this.player.x, this.player.y, '#ffaa00'));
+            }
+
+            return; // Don't actually game over
+        }
+
         // お金を保存
         const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
         this.money += bonusMoney;
@@ -5281,6 +6238,42 @@ class Game {
         // Reset map level on game over
         this.mapLevel = 1;
     }
+
+    // === Debug Helpers ===
+    giveItem(itemId) {
+        if (!this.player) {
+            console.error('❌ Game not started! Start a mission first.');
+            return;
+        }
+
+        const relic = this.ui.relics.find(r => r.id === itemId);
+        if (!relic) {
+            console.error(`❌ Item not found: ${itemId}`);
+            console.log('Available items:', this.ui.relics.map(r => r.id).join(', '));
+            return;
+        }
+
+        // Apply effect without cost
+        relic.effect(this.player);
+        this.acquiredRelics.push(relic);
+        this.ui.updateAcquiredItems(this.acquiredRelics);
+
+        console.log(`✅ Obtained: ${relic.name} (${relic.desc})`);
+    }
+
+    listItems() {
+        console.log('=== Available Items ===');
+        this.ui.relics.forEach(r => {
+            const rarityColor = {
+                'common': '⬜',
+                'rare': '🔵',
+                'epic': '🟣',
+                'legendary': '🟠'
+            }[r.rarity];
+            console.log(`${rarityColor} ${r.id.padEnd(20)} - ${r.name} (${r.desc})`);
+        });
+        console.log('\nUsage: game.giveItem("item_id")');
+    }
 }
 
 
@@ -5290,6 +6283,7 @@ class Game {
 window.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('gameCanvas');
     const game = new Game(canvas);
+    window.game = game; // グローバルに公開（デバッグ用）
     game.start();
 });
 

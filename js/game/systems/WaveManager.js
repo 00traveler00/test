@@ -79,14 +79,14 @@ export class WaveManager {
             this.spawnTimer += dt;
 
             // RoR2 Style Difficulty Scaling
-            // Difficulty increases by 30% every 60 seconds (以前は50%)
+            // Difficulty increases by 60% every 60 seconds (大幅強化: 0.3→0.6)
             // Base difficulty is set in constructor (increases with loops)
-            const timeScaling = 1.0 + (this.time / 60.0) * 0.3;
+            const timeScaling = 1.0 + (this.time / 60.0) * 0.6;
             this.difficulty = this.initialDifficulty * timeScaling;
 
             // Spawn Interval decreases with difficulty
-            // Base 1.5s -> limit to 0.2s
-            const currentInterval = Math.max(0.2, 1.5 / Math.sqrt(this.difficulty));
+            // Base 2.0s -> limit to 0.3s (以前は1.5s -> 0.2s)
+            const currentInterval = Math.max(0.3, 2.0 / Math.sqrt(this.difficulty));
 
             if (this.spawnTimer >= currentInterval) {
                 this.spawnEnemy();
@@ -124,11 +124,22 @@ export class WaveManager {
     }
 
     spawnEnemy() {
+        // Enemy Count Limit: Cap at 40 enemies to prevent performance issues
+        const MAX_ENEMIES = 40;
+        if (this.enemies.length >= MAX_ENEMIES) {
+            return; // Skip spawning if at capacity
+        }
+
         // Spawn Count scales with difficulty
         // Cap at 5 per interval to prevent performance kill
         const spawnCount = Math.min(5, Math.floor(this.difficulty));
 
         for (let i = 0; i < spawnCount; i++) {
+            // Check again inside loop to prevent overshooting the limit
+            if (this.enemies.length >= MAX_ENEMIES) {
+                break;
+            }
+
             // Spawn around player (outside camera view)
             const angle = Math.random() * Math.PI * 2;
             const dist = 500 + Math.random() * 200; // Outside screen
@@ -223,16 +234,19 @@ export class WaveManager {
                 enemyType = new RandomEnemy(this.game, x, y);
             }
 
+
             // Apply Difficulty Scaling
-            enemyType.hp *= this.difficulty;
-            enemyType.maxHp *= this.difficulty;
+            // HP: 時間経過で指数的に上昇（序盤は控えめ、後半は大きく）
+            // difficulty^1.5 で序盤を緩やかに（1.8→1.5に調整）
+            const hpScaling = Math.pow(this.difficulty, 1.5);
+            enemyType.hp *= hpScaling;
+            enemyType.maxHp *= hpScaling;
+
+            // Damage: 線形スケーリングのまま（HPほど上げない）
             enemyType.damage *= this.difficulty;
 
-            // Map Level Scaling
-            const stageMultiplier = 1 + (mapDifficulty - 1) * 0.15;
-            enemyType.hp *= stageMultiplier;
-            enemyType.maxHp *= stageMultiplier;
-            enemyType.damage *= stageMultiplier;
+            // Map Level Scaling: 廃止
+
 
             this.enemies.push(enemyType);
         }
