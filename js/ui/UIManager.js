@@ -5,33 +5,33 @@ export class UIManager {
         this.screens = {};
 
         // Relic Data (Moved from ShopSystem)
-        // レアリティ: common (70%), rare (20%), epic (8%), legendary (2%)
+        // レアリティ: common (48%), rare (35%), epic (15%), legendary (2%)
         // 価格は基礎値の20%減（序盤の成長をしやすくするため）
         this.relics = [
             // Common (コモン) - 基本的な強化
-            { id: 'atk_up', name: 'Cyber Katana', desc: 'Attack Damage +10%', cost: 12, rarity: 'common', color: '#ff4444', rarityBorder: '#888888', weight: 5, effect: (p) => p.damage *= 1.1 },
-            { id: 'spd_up', name: 'Neko Headphones', desc: 'Move Speed +15%', cost: 16, rarity: 'common', color: '#4444ff', rarityBorder: '#888888', weight: 5, effect: (p) => p.speed *= 1.15 },
-            { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 20, rarity: 'common', color: '#44ff44', rarityBorder: '#888888', weight: 5, effect: (p) => { p.maxHp += 30; p.hp += 30; } },
-            { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 14, rarity: 'common', color: '#ffaa00', rarityBorder: '#888888', weight: 5, effect: (p) => p.shootInterval *= 0.9 },
-            { id: 'pierce_shot', name: 'Plasma Orb', desc: 'Fire penetrating orbs +1', cost: 28, rarity: 'rare', color: '#00aaff', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.pierceShotCount) p.pierceShotCount = 0; p.pierceShotCount++; } },
-            { id: 'hp_regen', name: 'Nano Repair', desc: 'HP Regen +0.5/sec', cost: 18, rarity: 'common', color: '#44ff88', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 0.5; } },
-            { id: 'crit_chance', name: 'Lucky Dice', desc: 'Crit Chance +10%', cost: 14, rarity: 'common', color: '#ffdd00', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.1; } },
-            { id: 'projectile_size', name: 'Amplifier Core', desc: 'Projectile Size +25%', cost: 13, rarity: 'common', color: '#ff6600', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.25; } },
+            { id: 'atk_up', name: 'Cyber Katana', desc: 'Attack Damage +10%', cost: 12, rarity: 'common', color: '#ff4444', rarityBorder: '#888888', weight: 7, effect: (p) => p.damage *= 1.1 },
+            { id: 'spd_up', name: 'Neko Headphones', desc: 'Move Speed +15%', cost: 16, rarity: 'common', color: '#4444ff', rarityBorder: '#888888', weight: 7, effect: (p) => p.speed *= 1.15 },
+            { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 20, rarity: 'common', color: '#44ff44', rarityBorder: '#888888', weight: 7, effect: (p) => { p.maxHp += 30; p.hp += 30; } },
+            { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 14, rarity: 'common', color: '#ffaa00', rarityBorder: '#888888', weight: 7, effect: (p) => p.shootInterval *= 0.9 },
+            { id: 'pierce_shot', name: 'Plasma Orb', desc: 'Fire penetrating orbs +1', cost: 28, rarity: 'rare', color: '#00aaff', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.pierceShotCount) p.pierceShotCount = 0; p.pierceShotCount++; } },
+            { id: 'hp_regen', name: 'Nano Repair', desc: 'HP Regen +0.5/sec', cost: 18, rarity: 'common', color: '#44ff88', rarityBorder: '#888888', weight: 7, effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 0.5; } },
+            { id: 'crit_chance', name: 'Lucky Dice', desc: 'Crit Chance +10%', cost: 14, rarity: 'common', color: '#ffdd00', rarityBorder: '#888888', weight: 7, effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.1; } },
+            { id: 'projectile_size', name: 'Amplifier Core', desc: 'Projectile Size +25%', cost: 13, rarity: 'common', color: '#ff6600', rarityBorder: '#888888', weight: 7, effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.25; } },
 
             // Rare (レア) - 便利な強化
-            { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 10, rarity: 'rare', color: '#00ffff', rarityBorder: '#4466ff', weight: 6, effect: (p) => { /* Handled in Drop */ } },
-            { id: 'shield_gen', name: 'Energy Barrier', desc: 'Shield absorbs 20 damage', cost: 28, rarity: 'rare', color: '#8888ff', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.shield) p.shield = 0; p.shield += 20; if (!p.maxShield) p.maxShield = 0; p.maxShield += 20; } },
-            { id: 'multishot', name: 'Splitter Module', desc: 'Shoot 2 extra bullets', cost: 32, rarity: 'rare', color: '#ff4488', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.multiShotCount) p.multiShotCount = 1; p.multiShotCount += 1; } },
-            { id: 'armor_plate', name: 'Titanium Plating', desc: 'Damage taken -15%', cost: 30, rarity: 'rare', color: '#999999', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.85; } },
+            { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 10, rarity: 'rare', color: '#00ffff', rarityBorder: '#4466ff', weight: 7, effect: (p) => { /* Handled in Drop */ } },
+            { id: 'shield_gen', name: 'Energy Barrier', desc: 'Shield absorbs 20 damage', cost: 28, rarity: 'rare', color: '#8888ff', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.shield) p.shield = 0; p.shield += 20; if (!p.maxShield) p.maxShield = 0; p.maxShield += 20; } },
+            { id: 'multishot', name: 'Splitter Module', desc: 'Shoot 2 extra bullets', cost: 32, rarity: 'rare', color: '#ff4488', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.multiShotCount) p.multiShotCount = 1; p.multiShotCount += 1; } },
+            { id: 'armor_plate', name: 'Titanium Plating', desc: 'Damage taken -15%', cost: 30, rarity: 'rare', color: '#999999', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.85; } },
 
             // Epic (エピック) - 強力な強化
-            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 32, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 7, effect: (p) => p.game.addDrone() },
-            { id: 'lifesteal', name: 'Vampire Fang', desc: 'Heal +1 HP per hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 7, effect: (p) => { if (!p.lifeStealFlat) p.lifeStealFlat = 0; p.lifeStealFlat += 1; } },
-            { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 44, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 6, effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
-            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 40, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 7, effect: (p) => p.missileCount++ },
+            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 32, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.game.addDrone() },
+            { id: 'lifesteal', name: 'Vampire Fang', desc: 'Heal +1 HP per hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { if (!p.lifeStealFlat) p.lifeStealFlat = 0; p.lifeStealFlat += 1; } },
+            { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 44, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
+            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 40, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.missileCount++ },
 
             // Legendary (レジェンダリー) - 超強力
-            { id: 'phoenix_heart', name: 'Phoenix Heart', desc: 'Revive once on death', cost: 64, rarity: 'legendary', color: '#ffaa00', rarityBorder: '#ff8800', weight: 5, effect: (p) => { if (!p.reviveCount) p.reviveCount = 0; p.reviveCount++; } },
+            { id: 'phoenix_heart', name: 'Phoenix Heart', desc: 'Revive once on death', cost: 64, rarity: 'legendary', color: '#ffaa00', rarityBorder: '#ff8800', weight: 2, effect: (p) => { if (!p.reviveCount) p.reviveCount = 0; p.reviveCount++; } },
             { id: 'phoenix_heart_used', name: 'Phoenix Heart (Used)', desc: 'Already consumed', cost: 0, rarity: 'legendary', color: '#666666', rarityBorder: '#444444', weight: 0, effect: (p) => { /* No effect */ } }
         ];
 
