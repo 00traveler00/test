@@ -3908,7 +3908,7 @@ class UIManager {
 
             // Epic (エピック) - 強力な強化
             { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 32, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.game.addDrone() },
-            { id: 'lifesteal', name: 'Vampire Fang', desc: 'Heal +1 HP per hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { if (!p.lifeStealFlat) p.lifeStealFlat = 0; p.lifeStealFlat += 1; } },
+            { id: 'lifesteal', name: 'Vampire Fang', desc: '20% chance to heal +1 HP on hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { if (!p.lifeStealChance) p.lifeStealChance = 0.20; else p.lifeStealChance *= 1.5; } },
             { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 44, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
             { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 40, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.missileCount++ },
 
@@ -3946,6 +3946,14 @@ class UIManager {
         // Home Screen
         this.screens.home = this.createScreen('home-screen', `
             <h2>Home Base</h2>
+            <div class="difficulty-select" style="position: absolute; top: 20px; left: 20px; text-align: left;">
+                <h3 style="margin: 0 0 5px 0; font-size: 14px; color: #aaa;">DIFFICULTY</h3>
+                <div class="difficulty-buttons" style="display: flex; gap: 5px;">
+                    <button class="cyber-btn small difficulty-btn selected" data-diff="normal" style="font-size: 10px; padding: 5px 10px;">NORMAL</button>
+                    <button class="cyber-btn small difficulty-btn" data-diff="hard" style="font-size: 10px; padding: 5px 10px;">HARD</button>
+                    <button class="cyber-btn small difficulty-btn" data-diff="veryhard" style="font-size: 10px; padding: 5px 10px;">V.HARD</button>
+                </div>
+            </div>
             <div class="character-select">
                 <div class="char-card selected" data-char="girl">
                     <canvas width="64" height="64" class="char-preview"></canvas>
@@ -4037,6 +4045,10 @@ class UIManager {
             <div class="victory-container">
                 <h1 class="victory-title">🎉 VICTORY! 🎉</h1>
                 <h2 class="victory-subtitle">ALL STAGES COMPLETED!</h2>
+                <div class="difficulty-display" style="position: absolute; top: 20px; left: 20px; text-align: left;">
+                    <span style="color: #aaa; font-size: 14px;">DIFFICULTY</span><br>
+                    <span id="victory-difficulty" style="color: #ff00ff; font-size: 20px; font-weight: bold;">NORMAL</span>
+                </div>
                 <div class="result-stats-container">
                     <div class="result-section">
                         <h3>Total Ene Collected</h3>
@@ -4073,6 +4085,10 @@ class UIManager {
         this.screens.gameover = this.createScreen('gameover-screen', `
             <div class="gameover-container">
                 <h2 style="color: #ff0000;">GAME OVER</h2>
+                <div class="difficulty-display" style="position: absolute; top: 20px; left: 20px; text-align: left;">
+                    <span style="color: #aaa; font-size: 14px;">DIFFICULTY</span><br>
+                    <span id="go-difficulty" style="color: #ff00ff; font-size: 20px; font-weight: bold;">NORMAL</span>
+                </div>
                 <div class="result-stats-container">
                     <div class="result-summary-row">
                         <div class="result-summary-item">
@@ -4205,6 +4221,19 @@ class UIManager {
             };
             card.addEventListener('touchstart', handleSelect, { passive: false });
             card.addEventListener('click', handleSelect);
+        });
+
+        // Difficulty Selection
+        const diffBtns = document.querySelectorAll('.difficulty-btn');
+        diffBtns.forEach(btn => {
+            const handleSelect = (e) => {
+                if (e.type === 'touchstart') e.preventDefault();
+                const diff = btn.dataset.diff;
+                this.game.setDifficulty(diff);
+                this.updateHome();
+            };
+            btn.addEventListener('touchstart', handleSelect, { passive: false });
+            btn.addEventListener('click', handleSelect);
         });
 
         // Result
@@ -4718,6 +4747,7 @@ class UIManager {
         }
         if (name === 'home') {
             this.drawCharacterPreviews();
+            this.updateHome(); // Update difficulty buttons and other home screen elements
         }
     }
 
@@ -4766,6 +4796,28 @@ class UIManager {
         document.getElementById('player-money').innerText = this.game.money;
         document.getElementById('cost-hp').innerText = this.game.upgradeSystem.upgrades.maxHp.cost;
         document.getElementById('cost-dmg').innerText = this.game.upgradeSystem.upgrades.damage.cost;
+        document.getElementById('cost-hp').innerText = this.game.upgradeSystem.upgrades.maxHp.cost;
+        document.getElementById('cost-dmg').innerText = this.game.upgradeSystem.upgrades.damage.cost;
+
+        // Update Difficulty Buttons
+        const diffBtns = document.querySelectorAll('.difficulty-btn');
+        diffBtns.forEach(btn => {
+            // Remove selected class and apply gray style
+            btn.classList.remove('selected');
+            btn.style.background = '#444';
+            btn.style.boxShadow = 'none';
+            btn.style.border = '2px solid #666';
+            btn.style.transform = 'scale(1)';
+
+            // If this is the selected difficulty, apply gradient style
+            if (btn.dataset.diff === this.game.selectedDifficulty) {
+                btn.classList.add('selected');
+                btn.style.background = 'linear-gradient(45deg, #ff00ff, #00ffff)';
+                btn.style.boxShadow = '0 0 15px rgba(255, 0, 255, 0.5)';
+                btn.style.border = '2px solid #fff';
+                btn.style.transform = 'scale(1.1)';
+            }
+        });
     }
 
     updateAcquiredItems(relics) {
@@ -4864,6 +4916,12 @@ class UIManager {
 
     updateGameOverStats(ene, killCount, relics, mapLevel, loopCount = 0) {
         document.getElementById('go-ene').innerText = ene;
+
+        // Update Difficulty Display
+        const diffText = this.game.selectedDifficulty.toUpperCase();
+        const goDiffEl = document.getElementById('go-difficulty');
+        if (goDiffEl) goDiffEl.innerText = diffText;
+
         const levelDisplay = document.getElementById('go-level');
         if (levelDisplay) {
             if (loopCount > 0) {
@@ -5370,6 +5428,7 @@ class Game {
         this.loopCount = 0; // ステージ10クリア後のループ回数
         this.totalStagesCleared = 0; // 通算ステージクリア回数（難易度計算用）
         this.selectedCharacter = 'girl';
+        this.selectedDifficulty = localStorage.getItem('difficulty') || 'normal'; // normal, hard, veryhard
         this.debugMode = false;
 
         this.resize();
@@ -5419,6 +5478,12 @@ class Game {
         }
     }
 
+    setDifficulty(diff) {
+        this.selectedDifficulty = diff;
+        localStorage.setItem('difficulty', diff);
+        console.log(`Difficulty set to: ${diff}`);
+    }
+
     startRun(preserveStats = false) {
         if (!preserveStats) {
             // Reset run-specific stats for a new game
@@ -5455,7 +5520,12 @@ class Game {
         const stageDifficulty = 1.0 + (this.totalStagesCleared * 0.1);
         const loopDifficulty = this.loopCount * 0.5; // ループごとの難易度上昇を少しマイルドに
 
-        const baseDifficulty = stageDifficulty + loopDifficulty;
+        // Difficulty Selection Multiplier
+        let diffMultiplier = 1.0;
+        if (this.selectedDifficulty === 'hard') diffMultiplier = 1.5;
+        if (this.selectedDifficulty === 'veryhard') diffMultiplier = 2.0;
+
+        const baseDifficulty = (stageDifficulty + loopDifficulty) * diffMultiplier;
 
         // Debug: Log difficulty breakdown
         console.log(`[Difficulty Init] Total Stages: ${this.totalStagesCleared}, Loop: ${this.loopCount}`);
@@ -5740,7 +5810,18 @@ class Game {
                             this.particles.push(new Particle(this, enemy.x, enemy.y, enemy.color));
                         }
 
-                        // Vampire Fang: Life steal on hit (Flat heal per hit)
+                        // Vampire Fang: Chance-based life steal on hit
+                        if (this.player.lifeStealChance) {
+                            // Roll for heal chance
+                            const roll = Math.random();
+                            if (roll < this.player.lifeStealChance) {
+                                const healAmount = 1; // Always heal 1 HP on success
+                                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                                this.showDamage(this.player.x, this.player.y - 30, '+' + healAmount, '#00ff00');
+                            }
+                        }
+
+                        // Legacy Flat Lifesteal (if still exists for compatibility)
                         if (this.player.lifeStealFlat) {
                             const healAmount = this.player.lifeStealFlat;
                             this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
@@ -6266,6 +6347,11 @@ class Game {
         this.setState('victory');
         document.getElementById('victory-ene').innerText = this.totalEneCollected;
         document.getElementById('victory-money').innerText = bonusMoney;
+
+        // Update Difficulty Display
+        const diffText = this.selectedDifficulty.toUpperCase();
+        const vicDiffEl = document.getElementById('victory-difficulty');
+        if (vicDiffEl) vicDiffEl.innerText = diffText;
 
         const victoryLevel = document.getElementById('victory-level');
         if (victoryLevel) {

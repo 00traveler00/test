@@ -49,6 +49,7 @@ export class Game {
         this.loopCount = 0; // ステージ10クリア後のループ回数
         this.totalStagesCleared = 0; // 通算ステージクリア回数（難易度計算用）
         this.selectedCharacter = 'girl';
+        this.selectedDifficulty = localStorage.getItem('difficulty') || 'normal'; // normal, hard, veryhard
         this.debugMode = false;
 
         this.resize();
@@ -98,6 +99,12 @@ export class Game {
         }
     }
 
+    setDifficulty(diff) {
+        this.selectedDifficulty = diff;
+        localStorage.setItem('difficulty', diff);
+        console.log(`Difficulty set to: ${diff}`);
+    }
+
     startRun(preserveStats = false) {
         if (!preserveStats) {
             // Reset run-specific stats for a new game
@@ -134,7 +141,12 @@ export class Game {
         const stageDifficulty = 1.0 + (this.totalStagesCleared * 0.1);
         const loopDifficulty = this.loopCount * 0.5; // ループごとの難易度上昇を少しマイルドに
 
-        const baseDifficulty = stageDifficulty + loopDifficulty;
+        // Difficulty Selection Multiplier
+        let diffMultiplier = 1.0;
+        if (this.selectedDifficulty === 'hard') diffMultiplier = 1.5;
+        if (this.selectedDifficulty === 'veryhard') diffMultiplier = 2.0;
+
+        const baseDifficulty = (stageDifficulty + loopDifficulty) * diffMultiplier;
 
         // Debug: Log difficulty breakdown
         console.log(`[Difficulty Init] Total Stages: ${this.totalStagesCleared}, Loop: ${this.loopCount}`);
@@ -419,7 +431,18 @@ export class Game {
                             this.particles.push(new Particle(this, enemy.x, enemy.y, enemy.color));
                         }
 
-                        // Vampire Fang: Life steal on hit (Flat heal per hit)
+                        // Vampire Fang: Chance-based life steal on hit
+                        if (this.player.lifeStealChance) {
+                            // Roll for heal chance
+                            const roll = Math.random();
+                            if (roll < this.player.lifeStealChance) {
+                                const healAmount = 1; // Always heal 1 HP on success
+                                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                                this.showDamage(this.player.x, this.player.y - 30, '+' + healAmount, '#00ff00');
+                            }
+                        }
+
+                        // Legacy Flat Lifesteal (if still exists for compatibility)
                         if (this.player.lifeStealFlat) {
                             const healAmount = this.player.lifeStealFlat;
                             this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
@@ -945,6 +968,11 @@ export class Game {
         this.setState('victory');
         document.getElementById('victory-ene').innerText = this.totalEneCollected;
         document.getElementById('victory-money').innerText = bonusMoney;
+
+        // Update Difficulty Display
+        const diffText = this.selectedDifficulty.toUpperCase();
+        const vicDiffEl = document.getElementById('victory-difficulty');
+        if (vicDiffEl) vicDiffEl.innerText = diffText;
 
         const victoryLevel = document.getElementById('victory-level');
         if (victoryLevel) {

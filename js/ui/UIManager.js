@@ -26,7 +26,7 @@ export class UIManager {
 
             // Epic (エピック) - 強力な強化
             { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 32, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.game.addDrone() },
-            { id: 'lifesteal', name: 'Vampire Fang', desc: 'Heal +1 HP per hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { if (!p.lifeStealFlat) p.lifeStealFlat = 0; p.lifeStealFlat += 1; } },
+            { id: 'lifesteal', name: 'Vampire Fang', desc: '20% chance to heal +1 HP on hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { if (!p.lifeStealChance) p.lifeStealChance = 0.20; else p.lifeStealChance *= 1.5; } },
             { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 44, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
             { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 40, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.missileCount++ },
 
@@ -64,6 +64,14 @@ export class UIManager {
         // Home Screen
         this.screens.home = this.createScreen('home-screen', `
             <h2>Home Base</h2>
+            <div class="difficulty-select" style="position: absolute; top: 20px; left: 20px; text-align: left;">
+                <h3 style="margin: 0 0 5px 0; font-size: 14px; color: #aaa;">DIFFICULTY</h3>
+                <div class="difficulty-buttons" style="display: flex; gap: 5px;">
+                    <button class="cyber-btn small difficulty-btn selected" data-diff="normal" style="font-size: 10px; padding: 5px 10px;">NORMAL</button>
+                    <button class="cyber-btn small difficulty-btn" data-diff="hard" style="font-size: 10px; padding: 5px 10px;">HARD</button>
+                    <button class="cyber-btn small difficulty-btn" data-diff="veryhard" style="font-size: 10px; padding: 5px 10px;">V.HARD</button>
+                </div>
+            </div>
             <div class="character-select">
                 <div class="char-card selected" data-char="girl">
                     <canvas width="64" height="64" class="char-preview"></canvas>
@@ -155,6 +163,10 @@ export class UIManager {
             <div class="victory-container">
                 <h1 class="victory-title">🎉 VICTORY! 🎉</h1>
                 <h2 class="victory-subtitle">ALL STAGES COMPLETED!</h2>
+                <div class="difficulty-display" style="position: absolute; top: 20px; left: 20px; text-align: left;">
+                    <span style="color: #aaa; font-size: 14px;">DIFFICULTY</span><br>
+                    <span id="victory-difficulty" style="color: #ff00ff; font-size: 20px; font-weight: bold;">NORMAL</span>
+                </div>
                 <div class="result-stats-container">
                     <div class="result-section">
                         <h3>Total Ene Collected</h3>
@@ -191,6 +203,10 @@ export class UIManager {
         this.screens.gameover = this.createScreen('gameover-screen', `
             <div class="gameover-container">
                 <h2 style="color: #ff0000;">GAME OVER</h2>
+                <div class="difficulty-display" style="position: absolute; top: 20px; left: 20px; text-align: left;">
+                    <span style="color: #aaa; font-size: 14px;">DIFFICULTY</span><br>
+                    <span id="go-difficulty" style="color: #ff00ff; font-size: 20px; font-weight: bold;">NORMAL</span>
+                </div>
                 <div class="result-stats-container">
                     <div class="result-summary-row">
                         <div class="result-summary-item">
@@ -323,6 +339,19 @@ export class UIManager {
             };
             card.addEventListener('touchstart', handleSelect, { passive: false });
             card.addEventListener('click', handleSelect);
+        });
+
+        // Difficulty Selection
+        const diffBtns = document.querySelectorAll('.difficulty-btn');
+        diffBtns.forEach(btn => {
+            const handleSelect = (e) => {
+                if (e.type === 'touchstart') e.preventDefault();
+                const diff = btn.dataset.diff;
+                this.game.setDifficulty(diff);
+                this.updateHome();
+            };
+            btn.addEventListener('touchstart', handleSelect, { passive: false });
+            btn.addEventListener('click', handleSelect);
         });
 
         // Result
@@ -836,6 +865,7 @@ export class UIManager {
         }
         if (name === 'home') {
             this.drawCharacterPreviews();
+            this.updateHome(); // Update difficulty buttons and other home screen elements
         }
     }
 
@@ -884,6 +914,28 @@ export class UIManager {
         document.getElementById('player-money').innerText = this.game.money;
         document.getElementById('cost-hp').innerText = this.game.upgradeSystem.upgrades.maxHp.cost;
         document.getElementById('cost-dmg').innerText = this.game.upgradeSystem.upgrades.damage.cost;
+        document.getElementById('cost-hp').innerText = this.game.upgradeSystem.upgrades.maxHp.cost;
+        document.getElementById('cost-dmg').innerText = this.game.upgradeSystem.upgrades.damage.cost;
+
+        // Update Difficulty Buttons
+        const diffBtns = document.querySelectorAll('.difficulty-btn');
+        diffBtns.forEach(btn => {
+            // Remove selected class and apply gray style
+            btn.classList.remove('selected');
+            btn.style.background = '#444';
+            btn.style.boxShadow = 'none';
+            btn.style.border = '2px solid #666';
+            btn.style.transform = 'scale(1)';
+
+            // If this is the selected difficulty, apply gradient style
+            if (btn.dataset.diff === this.game.selectedDifficulty) {
+                btn.classList.add('selected');
+                btn.style.background = 'linear-gradient(45deg, #ff00ff, #00ffff)';
+                btn.style.boxShadow = '0 0 15px rgba(255, 0, 255, 0.5)';
+                btn.style.border = '2px solid #fff';
+                btn.style.transform = 'scale(1.1)';
+            }
+        });
     }
 
     updateAcquiredItems(relics) {
@@ -982,6 +1034,12 @@ export class UIManager {
 
     updateGameOverStats(ene, killCount, relics, mapLevel, loopCount = 0) {
         document.getElementById('go-ene').innerText = ene;
+
+        // Update Difficulty Display
+        const diffText = this.game.selectedDifficulty.toUpperCase();
+        const goDiffEl = document.getElementById('go-difficulty');
+        if (goDiffEl) goDiffEl.innerText = diffText;
+
         const levelDisplay = document.getElementById('go-level');
         if (levelDisplay) {
             if (loopCount > 0) {
