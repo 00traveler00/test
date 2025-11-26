@@ -3856,7 +3856,7 @@ class UIManager {
             { id: 'spd_up', name: 'Neko Headphones', desc: 'Move Speed +15%', cost: 16, rarity: 'common', color: '#4444ff', rarityBorder: '#888888', weight: 5, effect: (p) => p.speed *= 1.15 },
             { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 20, rarity: 'common', color: '#44ff44', rarityBorder: '#888888', weight: 5, effect: (p) => { p.maxHp += 30; p.hp += 30; } },
             { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 14, rarity: 'common', color: '#ffaa00', rarityBorder: '#888888', weight: 5, effect: (p) => p.shootInterval *= 0.9 },
-            { id: 'pierce_shot', name: 'Plasma Orb', desc: 'Fire penetrating orbs +1', cost: 16, rarity: 'common', color: '#00aaff', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.pierceShotCount) p.pierceShotCount = 0; p.pierceShotCount++; } },
+            { id: 'pierce_shot', name: 'Plasma Orb', desc: 'Fire penetrating orbs +1', cost: 28, rarity: 'rare', color: '#00aaff', rarityBorder: '#4466ff', weight: 6, effect: (p) => { if (!p.pierceShotCount) p.pierceShotCount = 0; p.pierceShotCount++; } },
             { id: 'hp_regen', name: 'Nano Repair', desc: 'HP Regen +0.5/sec', cost: 18, rarity: 'common', color: '#44ff88', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 0.5; } },
             { id: 'crit_chance', name: 'Lucky Dice', desc: 'Crit Chance +10%', cost: 14, rarity: 'common', color: '#ffdd00', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.1; } },
             { id: 'projectile_size', name: 'Amplifier Core', desc: 'Projectile Size +25%', cost: 13, rarity: 'common', color: '#ff6600', rarityBorder: '#888888', weight: 5, effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.25; } },
@@ -3869,7 +3869,7 @@ class UIManager {
 
             // Epic (エピック) - 強力な強化
             { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 32, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 7, effect: (p) => p.game.addDrone() },
-            { id: 'lifesteal', name: 'Vampire Fang', desc: 'Heal 10% of damage dealt', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 7, effect: (p) => { if (!p.lifeSteal) p.lifeSteal = 0; p.lifeSteal += 0.10; } },
+            { id: 'lifesteal', name: 'Vampire Fang', desc: 'Heal +1 HP per hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 7, effect: (p) => { if (!p.lifeStealFlat) p.lifeStealFlat = 0; p.lifeStealFlat += 1; } },
             { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 44, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 6, effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
             { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 40, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 7, effect: (p) => p.missileCount++ },
 
@@ -5701,10 +5701,17 @@ class Game {
                             this.particles.push(new Particle(this, enemy.x, enemy.y, enemy.color));
                         }
 
+                        // Vampire Fang: Life steal on hit (Flat heal per hit)
+                        if (this.player.lifeStealFlat) {
+                            const healAmount = this.player.lifeStealFlat;
+                            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                            this.showDamage(this.player.x, this.player.y - 30, '+' + Math.round(healAmount), '#00ff00');
+                        }
+
+                        // Vampire Fang (Old): Percentage-based lifesteal on kill (kept for compatibility)
                         if (enemy.hp <= 0) {
                             enemy.markedForDeletion = true;
 
-                            // Vampire Fang: Life steal on kill
                             if (this.player.lifeSteal) {
                                 const healAmount = proj.damage * this.player.lifeSteal;
                                 this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);

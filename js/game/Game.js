@@ -419,10 +419,17 @@ export class Game {
                             this.particles.push(new Particle(this, enemy.x, enemy.y, enemy.color));
                         }
 
+                        // Vampire Fang: Life steal on hit (Flat heal per hit)
+                        if (this.player.lifeStealFlat) {
+                            const healAmount = this.player.lifeStealFlat;
+                            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+                            this.showDamage(this.player.x, this.player.y - 30, '+' + Math.round(healAmount), '#00ff00');
+                        }
+
+                        // Vampire Fang (Old): Percentage-based lifesteal on kill (kept for compatibility)
                         if (enemy.hp <= 0) {
                             enemy.markedForDeletion = true;
 
-                            // Vampire Fang: Life steal on kill
                             if (this.player.lifeSteal) {
                                 const healAmount = proj.damage * this.player.lifeSteal;
                                 this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
