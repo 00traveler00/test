@@ -6351,7 +6351,6 @@ class Game {
             // Reset NextStageAltar flags to prevent automatic activation
             if (this.nextStageAltar) {
                 this.nextStageAltar.wasPlayerNear = true; // Mark as "already near" to prevent trigger
-                this.nextStageAltar.activated = true; // Prevent activation
             }
 
             // Revive with 50% HP
