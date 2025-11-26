@@ -716,46 +716,85 @@ class Drone {
     }
 
     update(dt) {
-        // Orbit player
-        this.angle += this.speed * dt;
-        this.x = this.player.x + Math.cos(this.angle) * this.distance;
-        this.y = this.player.y + Math.sin(this.angle) * this.distance;
+        // Determine orbit center
+        let centerX = this.player.x;
+        let centerY = this.player.y;
+        let orbitSpeed = this.speed;
+
+        if (this.game.droneTarget && !this.game.droneTarget.markedForDeletion) {
+            centerX = this.game.droneTarget.x;
+            centerY = this.game.droneTarget.y;
+            orbitSpeed = this.speed * 2; // Orbit faster around enemies
+        }
+
+        // Orbit logic
+        this.angle += orbitSpeed * dt;
+
+        // Target position
+        const targetX = centerX + Math.cos(this.angle) * this.distance;
+        const targetY = centerY + Math.sin(this.angle) * this.distance;
+
+        // Smooth movement to target position (Lerp)
+        const lerpFactor = 5.0 * dt;
+        this.x += (targetX - this.x) * lerpFactor;
+        this.y += (targetY - this.y) * lerpFactor;
 
         // Shoot nearest enemy
         this.shootTimer -= dt;
         if (this.shootTimer <= 0) {
             this.shoot();
-            this.shootTimer = this.shootInterval;
+            this.shootTimer = this.player.shootInterval; // Sync with player attack speed
         }
     }
 
     shoot() {
         if (!this.game.waveManager) return;
 
-        let nearest = null;
-        let minDist = Infinity;
+        // Shared Target Logic
+        // Check if current target is valid
+        if (this.game.droneTarget && (this.game.droneTarget.markedForDeletion || this.game.droneTarget.hp <= 0)) {
+            this.game.droneTarget = null;
+        }
 
-        this.game.waveManager.enemies.forEach(enemy => {
-            const dx = enemy.x - this.x;
-            const dy = enemy.y - this.y;
+        // If no target, find new one
+        if (!this.game.droneTarget) {
+            let nearest = null;
+            let minDist = Infinity;
+
+            this.game.waveManager.enemies.forEach(enemy => {
+                if (enemy.markedForDeletion) return;
+
+                const dx = enemy.x - this.player.x; // Find nearest to player, not drone
+                const dy = enemy.y - this.player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < this.range && dist < minDist) {
+                    minDist = dist;
+                    nearest = enemy;
+                }
+            });
+
+            if (nearest) {
+                this.game.droneTarget = nearest;
+            }
+        }
+
+        // Attack shared target
+        if (this.game.droneTarget) {
+            const target = this.game.droneTarget;
+
+            // Check if target is within range of THIS drone
+            const dx = target.x - this.x;
+            const dy = target.y - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist < this.range && dist < minDist) {
-                minDist = dist;
-                nearest = enemy;
+            if (dist < this.range) {
+                // Drones shoot standard projectiles for now
+                const proj = new Projectile(this.game, this.x, this.y, target);
+                proj.damage = this.game.player.damage * 1.0; // 100% of player damage
+                proj.color = this.color;   // Override color
+                this.game.player.projectiles.push(proj);
             }
-        });
-
-        if (nearest) {
-            const dx = nearest.x - this.x;
-            const dy = nearest.y - this.y;
-            const angle = Math.atan2(dy, dx);
-
-            // Drones shoot standard projectiles for now
-            const proj = new Projectile(this.game, this.x, this.y, nearest);
-            proj.damage = this.game.player.damage * 0.6; // 60% of player damage
-            proj.color = this.color;   // Override color
-            this.game.player.projectiles.push(proj);
         }
     }
 
