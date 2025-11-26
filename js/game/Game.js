@@ -80,6 +80,13 @@ export class Game {
         this.state = newState;
         this.ui.showScreen(newState === 'playing' ? 'hud' : newState);
 
+        // Toggle body class for minimap visibility
+        if (newState === 'playing') {
+            document.body.classList.add('playing');
+        } else {
+            document.body.classList.remove('playing');
+        }
+
         if (newState === 'playing') {
             if (!this.player) this.startRun(); // Only start run if not resuming
         } else if (newState === 'title') {
@@ -533,6 +540,7 @@ export class Game {
 
             if (this.nextStageAltar) this.nextStageAltar.draw(this.ctx);
 
+
             this.drones.forEach(d => d.draw(this.ctx));
             this.enemyProjectiles.forEach(p => p.draw(this.ctx));
             this.particles.forEach(p => p.draw(this.ctx));
@@ -540,7 +548,10 @@ export class Game {
 
             this.ctx.restore();
 
-            this.minimap.draw();
+            // Show minimap only during active gameplay
+            if (this.state === 'playing') {
+                this.minimap.draw();
+            }
         } else {
             this.drawGrid(); // Static grid for menus
         }

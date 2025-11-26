@@ -47,6 +47,14 @@ class InputHandler {
     }
 
     handleTouchStart(e) {
+        // Allow scrolling/interaction on specific UI containers
+        if (e.target.closest('.victory-container') ||
+            e.target.closest('.gameover-container') ||
+            e.target.closest('.options-container') ||
+            e.target.closest('.scrollable')) {
+            return;
+        }
+
         e.preventDefault();
         this.touchActive = true;
         this.touchStart.x = e.touches[0].clientX;
@@ -57,6 +65,14 @@ class InputHandler {
     }
 
     handleTouchMove(e) {
+        // Allow scrolling/interaction on specific UI containers
+        if (e.target.closest('.victory-container') ||
+            e.target.closest('.gameover-container') ||
+            e.target.closest('.options-container') ||
+            e.target.closest('.scrollable')) {
+            return;
+        }
+
         e.preventDefault();
         if (!this.touchActive) return;
         this.touchCurrent.x = e.touches[0].clientX;
@@ -65,6 +81,14 @@ class InputHandler {
     }
 
     handleTouchEnd(e) {
+        // Allow scrolling/interaction on specific UI containers
+        if (e.target.closest('.victory-container') ||
+            e.target.closest('.gameover-container') ||
+            e.target.closest('.options-container') ||
+            e.target.closest('.scrollable')) {
+            return;
+        }
+
         e.preventDefault();
         this.touchActive = false;
         this.joystickVector = { x: 0, y: 0 };
@@ -3380,6 +3404,11 @@ class Minimap {
     }
 
     draw() {
+        // Only show minimap during active gameplay
+        if (this.game.state !== 'playing') {
+            return;
+        }
+
         // Clear
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         this.ctx.fillRect(0, 0, this.width, this.height);
@@ -3616,9 +3645,10 @@ class WaveManager {
             this.spawnTimer += dt;
 
             // RoR2 Style Difficulty Scaling
-            // Difficulty increases by 60% every 60 seconds (大幅強化: 0.3→0.6)
-            // Base difficulty is set in constructor (increases with loops)
-            const timeScaling = 1.0 + (this.time / 60.0) * 0.6;
+            // Exponential growth: slow in early game, faster in late game
+            // Formula: (1 + time/180)^1.5
+            // Examples: 0s=1.0, 60s=1.23, 120s=1.52, 180s=1.86, 300s=2.67, 600s=6.27
+            const timeScaling = Math.pow(1.0 + (this.time / 180.0), 1.5);
             this.difficulty = this.initialDifficulty * timeScaling;
 
             // Spawn Interval decreases with difficulty
@@ -3970,32 +4000,38 @@ class UIManager {
 
         // Game Over Screen
         this.screens.gameover = this.createScreen('gameover-screen', `
-            <h2 style="color: #ff0000;">GAME OVER</h2>
-            <div class="result-stats-container">
-                <div class="result-section">
-                    <h3>Reached Stage</h3>
-                    <p class="result-big-text"><span id="go-level">1</span></p>
-                </div>
-                <div class="result-section">
-                    <h3>Total Ene</h3>
-                    <p class="result-big-text"><span id="go-ene">0</span></p>
-                </div>
-                <div class="result-section">
-                    <h3>Character Used</h3>
-                    <div style="display: flex; justify-content: center; align-items: center; height: 60px; width: 100%;">
-                        <canvas id="go-character" width="50" height="50" style="width: 50px; height: 50px; display: block;"></canvas>
+            <div class="gameover-container">
+                <h2 style="color: #ff0000;">GAME OVER</h2>
+                <div class="result-stats-container">
+                    <div class="result-summary-row">
+                        <div class="result-summary-item">
+                            <h3>Character</h3>
+                            <div style="display: flex; justify-content: center; align-items: center; height: 60px; width: 100%;">
+                                <canvas id="go-character" width="50" height="50" style="width: 50px; height: 50px; display: block;"></canvas>
+                            </div>
+                        </div>
+                        <div class="result-summary-item">
+                            <h3>Reached Stage</h3>
+                            <p class="result-big-text"><span id="go-level">1</span></p>
+                        </div>
+                        <div class="result-summary-item">
+                            <h3>Total Ene</h3>
+                            <p class="result-big-text"><span id="go-ene">0</span></p>
+                        </div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Defeated Enemies</h3>
+                        <div id="go-enemies" class="result-grid"></div>
+                    </div>
+                    <div class="result-section">
+                        <h3>Acquired Items</h3>
+                        <div id="go-items" class="result-grid"></div>
                     </div>
                 </div>
-                <div class="result-section">
-                    <h3>Defeated Enemies</h3>
-                    <div id="go-enemies" class="result-grid"></div>
-                </div>
-                <div class="result-section">
-                    <h3>Acquired Items</h3>
-                    <div id="go-items" class="result-grid"></div>
+                <div style="display: flex; justify-content: center; width: 100%;">
+                    <button id="btn-go-home" class="cyber-btn">RETURN HOME</button>
                 </div>
             </div>
-            <button id="btn-go-home" class="cyber-btn">RETURN HOME</button>
         `);
 
         // Reward Screen (New)
@@ -5273,6 +5309,13 @@ class Game {
         this.state = newState;
         this.ui.showScreen(newState === 'playing' ? 'hud' : newState);
 
+        // Toggle body class for minimap visibility
+        if (newState === 'playing') {
+            document.body.classList.add('playing');
+        } else {
+            document.body.classList.remove('playing');
+        }
+
         if (newState === 'playing') {
             if (!this.player) this.startRun(); // Only start run if not resuming
         } else if (newState === 'title') {
@@ -5726,6 +5769,7 @@ class Game {
 
             if (this.nextStageAltar) this.nextStageAltar.draw(this.ctx);
 
+
             this.drones.forEach(d => d.draw(this.ctx));
             this.enemyProjectiles.forEach(p => p.draw(this.ctx));
             this.particles.forEach(p => p.draw(this.ctx));
@@ -5733,7 +5777,10 @@ class Game {
 
             this.ctx.restore();
 
-            this.minimap.draw();
+            // Show minimap only during active gameplay
+            if (this.state === 'playing') {
+                this.minimap.draw();
+            }
         } else {
             this.drawGrid(); // Static grid for menus
         }

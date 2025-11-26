@@ -1,0 +1,43 @@
+/* Result Summary Row - Horizontal Layout */
+.result-summary-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 2vw;
+    margin-bottom: 3vh;
+    padding: 2vh 1vw;
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.result-summary-item {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+}
+
+.result-summary-item h3 {
+    color: #00ffff;
+    font-size: min(4vw, 1rem);
+    margin-bottom: 1vh;
+    text-transform: uppercase;
+}
+
+.result-summary-item .result-big-text {
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    color: #ffff00;
+    margin: 0;
+}
+
+/* Mobile adjustments for summary row */
+@media (max-width: 600px) {
+    .result-summary-row {
+        flex-direction: column;
+        gap: 2vh;
+    }
+
+    .result-summary-item h3 {
+        font-size: min(5vw, 1.2rem);
+    }
+}

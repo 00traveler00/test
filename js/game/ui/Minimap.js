@@ -21,6 +21,11 @@ export class Minimap {
     }
 
     draw() {
+        // Only show minimap during active gameplay
+        if (this.game.state !== 'playing') {
+            return;
+        }
+
         // Clear
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         this.ctx.fillRect(0, 0, this.width, this.height);
