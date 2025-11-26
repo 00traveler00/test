@@ -29,6 +29,86 @@
         body.playing .minimap {
             display: block;
         }
+
+        /* Boss HP Bar */
+        .boss-hud {
+            position: absolute;
+            bottom: 5vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70vw;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 9999;
+            opacity: 1;
+        }
+
+        .boss-hud.hidden {
+            opacity: 0 !important;
+            transform: translateX(-50%) translateY(20px);
+            pointer-events: none;
+        }
+
+        .boss-info {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 0.5vh;
+            padding: 0 1vw;
+            box-sizing: border-box;
+        }
+
+        .boss-name {
+            font-size: min(5vw, 1.5rem);
+            font-weight: bold;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .boss-hp-text {
+            font-size: min(4vw, 1.2rem);
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 5px #000;
+        }
+
+        .boss-bar-container {
+            width: 100%;
+            height: min(4vh, 30px);
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #fff;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .boss-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff4444, #ff0000);
+            background-size: 200% 100%;
+            animation: bossBarPulse 2s infinite linear;
+            transition: width 0.2s ease-out;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8) inset;
+        }
+
+        @keyframes bossBarPulse {
+            0% {
+                background-position: 100% 0;
+            }
+
+            100% {
+                background-position: -100% 0;
+            }
+        }
     </style>
 </head>
 

@@ -294,6 +294,10 @@ export class Game {
                     this.player.shield || 0,
                     this.player.maxShield || 0
                 );
+
+                // Update Boss HP Bar
+                const boss = this.waveManager.enemies.find(e => e.isBoss);
+                this.ui.updateBossHP(boss);
             }
         }
     }

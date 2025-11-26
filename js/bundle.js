@@ -2423,6 +2423,7 @@ class Overlord extends BaseBoss {
 class SlimeKing extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'slime_king');
+        this.name = 'SLIME KING';
         this.color = '#00ff88';
         this.radius = 80;
         this.jumpTarget = { x: 0, y: 0 };
@@ -2593,6 +2594,7 @@ class SlimeKing extends BaseBoss {
 class MechaGolem extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'mecha_golem');
+        this.name = 'MECHA GOLEM';
         this.color = '#ff4444';
         this.radius = 90;
     }
@@ -2712,6 +2714,7 @@ class MechaGolem extends BaseBoss {
 class VoidPhantom extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'void_phantom');
+        this.name = 'VOID PHANTOM';
         this.color = '#aa00ff';
         this.radius = 50;
         this.teleportTarget = { x: 0, y: 0 };
@@ -2845,6 +2848,7 @@ class VoidPhantom extends BaseBoss {
 class CrimsonDragon extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'crimson_dragon');
+        this.name = 'CRIMSON DRAGON';
         this.color = '#ffaa00';
         this.radius = 100;
         this.angle = 0;
@@ -3941,6 +3945,18 @@ class UIManager {
                     <!-- Minimap will be positioned here via absolute positioning -->
                 </div>
             </div>
+            
+            <!-- Boss HP Bar Container -->
+            <div id="boss-hud" class="boss-hud hidden">
+                <div class="boss-info">
+                    <span id="boss-name" class="boss-name">BOSS NAME</span>
+                    <span id="boss-hp-text" class="boss-hp-text">100%</span>
+                </div>
+                <div class="boss-bar-container">
+                    <div id="boss-hp-bar" class="boss-bar"></div>
+                </div>
+            </div>
+
             <div id="acquired-items-container" class="acquired-items">
                 <!-- Acquired item icons will be added here -->
             </div>
@@ -4746,30 +4762,61 @@ class UIManager {
             }
 
             container.appendChild(wrapper);
+
         });
+    }
+
+    updateBossHP(boss) {
+        const bossHud = document.getElementById('boss-hud');
+        if (!bossHud) return;
+
+        if (boss && boss.hp > 0) {
+            if (bossHud.classList.contains('hidden')) {
+                bossHud.classList.remove('hidden');
+            }
+
+            // Update Name
+            const nameEl = document.getElementById('boss-name');
+            if (nameEl && nameEl.innerText !== boss.name) {
+                nameEl.innerText = boss.name || 'UNKNOWN ENTITY';
+                nameEl.style.color = boss.color || '#ff0000';
+                nameEl.style.textShadow = `0 0 10px ${boss.color || '#ff0000'}`;
+            }
+
+            // Update Bar
+            const hpPercent = Math.max(0, (boss.hp / boss.maxHp) * 100);
+            const bar = document.getElementById('boss-hp-bar');
+            if (bar) {
+                bar.style.width = `${hpPercent}%`;
+            }
+
+            // Update Text
+            const textEl = document.getElementById('boss-hp-text');
+            if (textEl) {
+                textEl.innerText = `${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)}`;
+            }
+
+        } else {
+            if (!bossHud.classList.contains('hidden')) {
+                bossHud.classList.add('hidden');
+            }
+        }
     }
 
     updateGameOverStats(ene, killCount, relics, mapLevel) {
         document.getElementById('go-ene').innerText = ene;
-
-        // Display Map Level
         const levelDisplay = document.getElementById('go-level');
-        if (levelDisplay) {
-            levelDisplay.innerText = mapLevel;
-        }
+        if (levelDisplay) levelDisplay.innerText = mapLevel;
 
-        // Draw Player Character
         const charCanvas = document.getElementById('go-character');
         if (charCanvas) {
             const ctx = charCanvas.getContext('2d');
             this.drawPlayerCharacter(ctx, this.game.selectedCharacter, 25, 25);
         }
 
-        // Enemies
         const enemyContainer = document.getElementById('go-enemies');
         enemyContainer.innerHTML = '';
 
-        // Define enemy display data
         const enemyTypes = {
             'slime': { color: '#00ff88', name: 'Slime' },
             'lizard': { color: '#aa00ff', name: 'Lizard' },
@@ -4778,7 +4825,6 @@ class UIManager {
             'kamikaze': { color: '#ffaa00', name: 'Kamikaze' },
             'missile_enemy': { color: '#ff0088', name: 'Missile Bot' },
             'beam_enemy': { color: '#0088ff', name: 'Beam Bot' },
-            // Bosses
             'overlord': { color: '#ff00ff', name: 'Overlord', isBoss: true },
             'slime_king': { color: '#00ff88', name: 'Slime King', isBoss: true },
             'mecha_golem': { color: '#ff4444', name: 'Mecha Golem', isBoss: true },
@@ -4789,7 +4835,6 @@ class UIManager {
         for (const [type, count] of Object.entries(killCount)) {
             if (count <= 0) continue;
             const data = enemyTypes[type] || { color: '#fff', name: 'Unknown' };
-
             const wrapper = document.createElement('div');
             wrapper.className = 'result-item-wrapper';
             wrapper.style.position = 'relative';
@@ -4802,26 +4847,19 @@ class UIManager {
             canvas.className = 'result-item-icon';
             const ctx = canvas.getContext('2d');
 
-            if (data.isBoss) {
-                this.drawBossIcon(ctx, type, data.color);
-            } else {
-                this.drawEnemyIcon(ctx, type, data.color);
-            }
+            if (data.isBoss) this.drawBossIcon(ctx, type, data.color);
+            else this.drawEnemyIcon(ctx, type, data.color);
 
             wrapper.appendChild(canvas);
-
             const badge = document.createElement('div');
             badge.innerText = `${count}`;
             badge.className = 'result-count-badge';
-
             wrapper.appendChild(badge);
             enemyContainer.appendChild(wrapper);
         }
 
-        // Items
         const itemContainer = document.getElementById('go-items');
         itemContainer.innerHTML = '';
-
         const itemCounts = {};
         relics.forEach(r => {
             if (!itemCounts[r.id]) itemCounts[r.id] = { count: 0, data: r };
@@ -4834,20 +4872,16 @@ class UIManager {
             wrapper.style.position = 'relative';
             wrapper.style.display = 'inline-block';
             wrapper.style.margin = '5px';
-
             const canvas = document.createElement('canvas');
             canvas.width = 40;
             canvas.height = 40;
             canvas.className = 'result-item-icon';
             const ctx = canvas.getContext('2d');
             this.drawRelicIcon(ctx, id, 40, 40, info.data.color);
-
             wrapper.appendChild(canvas);
-
             const badge = document.createElement('div');
             badge.innerText = `${info.count}`;
             badge.className = 'result-count-badge';
-
             wrapper.appendChild(badge);
             itemContainer.appendChild(wrapper);
         }
@@ -5516,6 +5550,10 @@ class Game {
                     this.player.shield || 0,
                     this.player.maxShield || 0
                 );
+
+                // Update Boss HP Bar
+                const boss = this.waveManager.enemies.find(e => e.isBoss);
+                this.ui.updateBossHP(boss);
             }
         }
     }

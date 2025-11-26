@@ -282,6 +282,7 @@ export class Overlord extends BaseBoss {
 export class SlimeKing extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'slime_king');
+        this.name = 'SLIME KING';
         this.color = '#00ff88';
         this.radius = 80;
         this.jumpTarget = { x: 0, y: 0 };
@@ -452,6 +453,7 @@ export class SlimeKing extends BaseBoss {
 export class MechaGolem extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'mecha_golem');
+        this.name = 'MECHA GOLEM';
         this.color = '#ff4444';
         this.radius = 90;
     }
@@ -571,6 +573,7 @@ export class MechaGolem extends BaseBoss {
 export class VoidPhantom extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'void_phantom');
+        this.name = 'VOID PHANTOM';
         this.color = '#aa00ff';
         this.radius = 50;
         this.teleportTarget = { x: 0, y: 0 };
@@ -704,6 +707,7 @@ export class VoidPhantom extends BaseBoss {
 export class CrimsonDragon extends BaseBoss {
     constructor(game, x, y) {
         super(game, x, y, 'crimson_dragon');
+        this.name = 'CRIMSON DRAGON';
         this.color = '#ffaa00';
         this.radius = 100;
         this.angle = 0;
