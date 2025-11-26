@@ -166,7 +166,7 @@ export class UIManager {
                     </div>
                     <div class="result-section">
                         <h3>Stages Cleared</h3>
-                        <p class="result-big-text">10 / 10</p>
+                        <p class="result-big-text"><span id="victory-level">10 / 10</span></p>
                     </div>
                     <div class="result-section">
                         <h3>Character Used</h3>
@@ -977,10 +977,16 @@ export class UIManager {
         }
     }
 
-    updateGameOverStats(ene, killCount, relics, mapLevel) {
+    updateGameOverStats(ene, killCount, relics, mapLevel, loopCount = 0) {
         document.getElementById('go-ene').innerText = ene;
         const levelDisplay = document.getElementById('go-level');
-        if (levelDisplay) levelDisplay.innerText = mapLevel;
+        if (levelDisplay) {
+            if (loopCount > 0) {
+                levelDisplay.innerText = `Loop ${loopCount} - Stage ${mapLevel}`;
+            } else {
+                levelDisplay.innerText = mapLevel;
+            }
+        }
 
         const charCanvas = document.getElementById('go-character');
         if (charCanvas) {

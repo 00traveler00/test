@@ -3992,7 +3992,7 @@ class UIManager {
                     </div>
                     <div class="result-section">
                         <h3>Stages Cleared</h3>
-                        <p class="result-big-text">10 / 10</p>
+                        <p class="result-big-text"><span id="victory-level">10 / 10</span></p>
                     </div>
                     <div class="result-section">
                         <h3>Character Used</h3>
@@ -4803,10 +4803,16 @@ class UIManager {
         }
     }
 
-    updateGameOverStats(ene, killCount, relics, mapLevel) {
+    updateGameOverStats(ene, killCount, relics, mapLevel, loopCount = 0) {
         document.getElementById('go-ene').innerText = ene;
         const levelDisplay = document.getElementById('go-level');
-        if (levelDisplay) levelDisplay.innerText = mapLevel;
+        if (levelDisplay) {
+            if (loopCount > 0) {
+                levelDisplay.innerText = `Loop ${loopCount} - Stage ${mapLevel}`;
+            } else {
+                levelDisplay.innerText = mapLevel;
+            }
+        }
 
         const charCanvas = document.getElementById('go-character');
         if (charCanvas) {
@@ -6173,6 +6179,15 @@ class Game {
         document.getElementById('victory-ene').innerText = this.totalEneCollected;
         document.getElementById('victory-money').innerText = bonusMoney;
 
+        const victoryLevel = document.getElementById('victory-level');
+        if (victoryLevel) {
+            if (this.loopCount > 0) {
+                victoryLevel.innerText = `Loop ${this.loopCount} Complete`;
+            } else {
+                victoryLevel.innerText = '10 / 10';
+            }
+        }
+
         // Draw Player Character
         const charCanvas = document.getElementById('victory-character');
         if (charCanvas) {
@@ -6312,7 +6327,7 @@ class Game {
         this.upgradeSystem.save();
 
         this.setState('gameover');
-        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel);
+        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel, this.loopCount);
         // Reset map level on game over
         this.mapLevel = 1;
     }

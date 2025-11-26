@@ -917,6 +917,15 @@ export class Game {
         document.getElementById('victory-ene').innerText = this.totalEneCollected;
         document.getElementById('victory-money').innerText = bonusMoney;
 
+        const victoryLevel = document.getElementById('victory-level');
+        if (victoryLevel) {
+            if (this.loopCount > 0) {
+                victoryLevel.innerText = `Loop ${this.loopCount} Complete`;
+            } else {
+                victoryLevel.innerText = '10 / 10';
+            }
+        }
+
         // Draw Player Character
         const charCanvas = document.getElementById('victory-character');
         if (charCanvas) {
@@ -1056,7 +1065,7 @@ export class Game {
         this.upgradeSystem.save();
 
         this.setState('gameover');
-        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel);
+        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel, this.loopCount);
         // Reset map level on game over
         this.mapLevel = 1;
     }
