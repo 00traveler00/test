@@ -426,53 +426,98 @@ export class UIManager {
             ctx.shadowColor = color;
 
             if (charType === 'cat') {
-                // Cyber Cat Ears
+                // Obtuse Cat Ears (Wider and Shorter)
                 ctx.beginPath();
-                ctx.moveTo(-10, -12);
-                ctx.lineTo(-14, -22);
-                ctx.lineTo(-5, -16);
+                ctx.moveTo(-12, -8);
+                ctx.lineTo(-18, -16);
+                ctx.lineTo(-4, -14);
                 ctx.fill();
                 ctx.stroke();
 
                 ctx.beginPath();
-                ctx.moveTo(10, -12);
-                ctx.lineTo(14, -22);
-                ctx.lineTo(5, -16);
+                ctx.moveTo(12, -8);
+                ctx.lineTo(18, -16);
+                ctx.lineTo(4, -14);
                 ctx.fill();
+                ctx.stroke();
+
+                // Whiskers
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                // Left
+                ctx.moveTo(-4, 2); ctx.lineTo(-14, 0);
+                ctx.moveTo(-4, 4); ctx.lineTo(-14, 5);
+                // Right
+                ctx.moveTo(4, 2); ctx.lineTo(14, 0);
+                ctx.moveTo(4, 4); ctx.lineTo(14, 5);
+                ctx.stroke();
+
+                // Cyber Tail (Static for preview)
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, radius * 0.8);
+                ctx.quadraticCurveTo(12, radius + 4, 14, radius - 4);
                 ctx.stroke();
 
             } else if (charType === 'girl') {
-                // Halo / Drone
+                // Small Halo at Top (Blue Archive style)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#fff';
                 ctx.beginPath();
-                ctx.ellipse(0, -20, 12, 4, 0, 0, Math.PI * 2);
-                ctx.strokeStyle = '#fff';
+                ctx.arc(0, -radius * 2.2, radius * 0.4, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Ribbon
-                ctx.fillStyle = '#ff66ff';
+                // Inner glow
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.arc(0, -12, 4, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.arc(0, -radius * 2.2, radius * 0.3, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Crystal Halo (Hexagon)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 8;
                 ctx.beginPath();
-                ctx.moveTo(0, -12);
-                ctx.lineTo(-10, -20);
-                ctx.lineTo(-10, -4);
-                ctx.fill();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const hx = Math.cos(angle) * (radius * 1.6);
+                    const hy = Math.sin(angle) * (radius * 1.6);
+                    if (i === 0) ctx.moveTo(hx, hy);
+                    else ctx.lineTo(hx, hy);
+                }
+                ctx.closePath();
+                ctx.stroke();
+
+                // Orbital Ring
+                ctx.strokeStyle = color;
                 ctx.beginPath();
-                ctx.moveTo(0, -12);
-                ctx.lineTo(10, -20);
-                ctx.lineTo(10, -4);
-                ctx.fill();
+                ctx.ellipse(0, 0, radius * 2.0, radius * 0.6, Math.PI / 4, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Particle Tail (Static for preview)
+                ctx.fillStyle = color;
+                for (let i = 1; i <= 3; i++) {
+                    ctx.beginPath();
+                    ctx.arc(-i * 8, 12, 3 - i, 0, Math.PI * 2);
+                    ctx.fill();
+                }
 
             } else if (charType === 'dog') {
-                // Floppy Cyber Ears
+                // Dog Ears (Static for preview)
                 ctx.fillStyle = '#ffaa00';
+                // Left Ear
                 ctx.beginPath();
-                ctx.ellipse(-14, -4, 5, 10, Math.PI / 4, 0, Math.PI * 2);
+                ctx.ellipse(-14, -4, 6, 11, Math.PI / 4, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
+                // Right Ear
                 ctx.beginPath();
-                ctx.ellipse(14, -4, 5, 10, -Math.PI / 4, 0, Math.PI * 2);
+                ctx.ellipse(14, -4, 6, 11, -Math.PI / 4, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
 
@@ -484,24 +529,60 @@ export class UIManager {
                 ctx.stroke();
 
             } else if (charType === 'boy') {
-                // Cyber Cap
-                ctx.fillStyle = '#00ff00';
+                // Cooler Cyber Ninja - Dark tactical helmet
+                ctx.fillStyle = '#001100';
+                ctx.shadowBlur = 0;
                 ctx.beginPath();
-                ctx.arc(0, -6, radius, Math.PI, 0);
+                // Helmet shape
+                ctx.arc(0, -2, radius * 1.1, Math.PI * 0.8, Math.PI * 0.2);
+                ctx.lineTo(radius * 0.9, 5);
+                ctx.lineTo(-radius * 0.9, 5);
+                ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
-                // Visor
-                ctx.strokeStyle = '#00ffff';
-                ctx.lineWidth = 2;
+
+                // Glowing Eye Visor (horizontal line)
+                ctx.fillStyle = color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color;
                 ctx.beginPath();
-                ctx.moveTo(-8, -4);
-                ctx.lineTo(8, -4);
+                ctx.rect(-radius * 0.8, -4, radius * 1.6, 2.5);
+                ctx.fill();
+
+                // Forehead plate detail
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(-5, -7);
+                ctx.lineTo(0, -10);
+                ctx.lineTo(5, -7);
+                ctx.stroke();
+
+                // Shoulder guards
+                ctx.fillStyle = '#003300';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.moveTo(-radius, 7);
+                ctx.lineTo(-radius * 1.3, 10);
+                ctx.lineTo(-radius * 1.1, 15);
+                ctx.lineTo(-radius * 0.8, 12);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(radius, 7);
+                ctx.lineTo(radius * 1.3, 10);
+                ctx.lineTo(radius * 1.1, 15);
+                ctx.lineTo(radius * 0.8, 12);
+                ctx.fill();
                 ctx.stroke();
             }
 
             ctx.restore();
         });
     }
+
 
     showRewardSelection(predefinedRelics = null, fixedDifficulty = null) {
         const container = document.getElementById('reward-container');
@@ -517,37 +598,26 @@ export class UIManager {
         }
 
         // Calculate cost multiplier based on fixed difficulty (from chest) or current difficulty
-        // Price scaling: 0.6 * difficulty^2.0
-        // Diff 1.0: 60% (Cheaper)
-        // Diff 2.0: 240% (vs 283% - Cheaper)
-        // Diff 3.0: 540% (vs 520% - Higher)
         const currentDifficulty = fixedDifficulty || (this.game.waveManager ? this.game.waveManager.difficulty : 1.0);
         const priceScaling = 0.6 * Math.pow(currentDifficulty, 2.0);
 
         choices.forEach(relic => {
-            // Scale the price exponentially based on difficulty
             const scaledCost = Math.ceil(relic.cost * priceScaling);
-
             const card = document.createElement('div');
             card.className = 'relic-card';
 
-            // Create canvas for icon
             const iconCanvas = document.createElement('canvas');
             iconCanvas.width = 64;
             iconCanvas.height = 64;
             iconCanvas.className = 'relic-icon';
 
-            // Draw icon using helper
             const ctx = iconCanvas.getContext('2d');
             this.drawRelicIcon(ctx, relic.id, 64, 64, relic.color);
-
             card.appendChild(iconCanvas);
 
-            // Set rarity border color
             card.style.borderColor = relic.rarityBorder;
             card.style.borderWidth = '3px';
 
-            // Add text info
             const info = document.createElement('div');
             info.innerHTML = `
                 <h3>${relic.name}</h3>
@@ -556,23 +626,18 @@ export class UIManager {
             `;
             card.appendChild(info);
 
-            // Check affordability
             if (this.game.ene < scaledCost) {
                 card.style.opacity = '0.5';
-                card.style.pointerEvents = 'none'; // Disable interaction
-                info.querySelector('.relic-cost').style.color = '#ff4444'; // Red cost
+                card.style.pointerEvents = 'none';
+                info.querySelector('.relic-cost').style.color = '#ff4444';
             }
 
-            // Click handler
             const handleBuy = (e) => {
                 if (e.type === 'touchstart') e.preventDefault();
-
                 if (this.game.ene >= scaledCost) {
-                    // Create a temporary relic object with the scaled cost to pass to applyRelic
                     const relicToBuy = { ...relic, cost: scaledCost };
                     this.game.applyRelic(relicToBuy);
                 } else {
-                    // Visual feedback: not enough Ene
                     card.style.border = '2px solid red';
                     setTimeout(() => card.style.border = '', 500);
                 }
@@ -580,7 +645,6 @@ export class UIManager {
 
             card.addEventListener('touchstart', handleBuy, { passive: false });
             card.addEventListener('click', handleBuy);
-
             container.appendChild(card);
         });
 

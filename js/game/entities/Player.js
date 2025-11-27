@@ -229,13 +229,24 @@ export class Player {
         ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2);
         ctx.fill();
 
+        // Electric Sparks (Cat specific)
+        if (this.charType === 'cat' && Math.random() < 0.1) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const angle = Math.random() * Math.PI * 2;
+            ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            ctx.lineTo(Math.cos(angle) * (r + 10), Math.sin(angle) * (r + 10));
+            ctx.stroke();
+        }
+
         // Accessories
-        this.drawAccessories(ctx);
+        this.drawAccessories(ctx, r);
 
         ctx.restore();
     }
 
-    drawAccessories(ctx) {
+    drawAccessories(ctx, r) {
         ctx.fillStyle = this.color;
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
@@ -243,64 +254,101 @@ export class Player {
         ctx.shadowColor = this.color;
 
         if (this.charType === 'cat') {
-            // Cyber Cat Ears
+            // Obtuse Cat Ears (Wider and Shorter)
             ctx.beginPath();
-            ctx.moveTo(-12, -15);
-            ctx.lineTo(-18, -28);
-            ctx.lineTo(-6, -20);
+            ctx.moveTo(-15, -10);
+            ctx.lineTo(-22, -20);
+            ctx.lineTo(-5, -18);
             ctx.fill();
             ctx.stroke();
 
             ctx.beginPath();
-            ctx.moveTo(12, -15);
-            ctx.lineTo(18, -28);
-            ctx.lineTo(6, -20);
+            ctx.moveTo(15, -10);
+            ctx.lineTo(22, -20);
+            ctx.lineTo(5, -18);
             ctx.fill();
+            ctx.stroke();
+
+            // Whiskers
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Left
+            ctx.moveTo(-5, 2); ctx.lineTo(-18, 0);
+            ctx.moveTo(-5, 5); ctx.lineTo(-18, 6);
+            // Right
+            ctx.moveTo(5, 2); ctx.lineTo(18, 0);
+            ctx.moveTo(5, 5); ctx.lineTo(18, 6);
             ctx.stroke();
 
             // Cyber Tail (Animated)
-            const tailWag = Math.sin(Date.now() / 200) * 10;
-            ctx.beginPath();
-            ctx.moveTo(0, 15);
-            ctx.quadraticCurveTo(20, 20, 20 + tailWag, 5);
+            const tailWag = Math.sin(this.time * 4) * 10;
             ctx.strokeStyle = this.color;
             ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, r * 0.8);
+            ctx.quadraticCurveTo(15 + tailWag, r + 5, 18 + tailWag, r - 5);
             ctx.stroke();
 
         } else if (this.charType === 'girl') {
-            // Halo / Drone
-            const hover = Math.sin(Date.now() / 300) * 5;
-            ctx.beginPath();
-            ctx.ellipse(0, -25 + hover, 15, 5, 0, 0, Math.PI * 2);
-            ctx.strokeStyle = '#fff';
+            // Small Halo at Top (Blue Archive style)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.lineWidth = 2;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, -r * 2.2, r * 0.4, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Ribbon
-            ctx.fillStyle = '#ff66ff';
+            // Inner glow
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.arc(0, -15, 5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.arc(0, -r * 2.2, r * 0.3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Crystal Halo (Hexagon)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
             ctx.beginPath();
-            ctx.moveTo(0, -15);
-            ctx.lineTo(-12, -25);
-            ctx.lineTo(-12, -5);
-            ctx.fill();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2 + this.time;
+                const hx = Math.cos(angle) * (r * 1.6);
+                const hy = Math.sin(angle) * (r * 1.6);
+                if (i === 0) ctx.moveTo(hx, hy);
+                else ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            // Orbital Ring
+            ctx.strokeStyle = this.color;
             ctx.beginPath();
-            ctx.moveTo(0, -15);
-            ctx.lineTo(12, -25);
-            ctx.lineTo(12, -5);
-            ctx.fill();
+            ctx.ellipse(0, 0, r * 2.0, r * 0.6, this.time * 2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Particle Tail (Simulated)
+            const tailY = Math.sin(this.time * 5) * 5;
+            ctx.fillStyle = this.color;
+            for (let i = 1; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.arc(-i * 10, 15 + tailY * (i / 2), 4 - i, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
         } else if (this.charType === 'dog') {
-            // Floppy Cyber Ears
+            // Animated Ears (Synchronized up/down)
+            const earWiggle = Math.sin(this.time * 10) * 3;
+
             ctx.fillStyle = '#ffaa00';
+            // Both ears move together
             ctx.beginPath();
-            ctx.ellipse(-18, -5, 6, 12, Math.PI / 4, 0, Math.PI * 2);
+            ctx.ellipse(-18, -5 + earWiggle, 8, 14, Math.PI / 4, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
             ctx.beginPath();
-            ctx.ellipse(18, -5, 6, 12, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.ellipse(18, -5 + earWiggle, 8, 14, -Math.PI / 4, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
@@ -312,18 +360,53 @@ export class Player {
             ctx.stroke();
 
         } else if (this.charType === 'boy') {
-            // Cyber Cap
-            ctx.fillStyle = '#00ff00';
+            // Cooler Cyber Ninja - Dark tactical helmet
+            ctx.fillStyle = '#001100';
+            ctx.shadowBlur = 0;
             ctx.beginPath();
-            ctx.arc(0, -8, this.radius, Math.PI, 0);
+            // Helmet shape
+            ctx.arc(0, -2, r * 1.1, Math.PI * 0.8, Math.PI * 0.2);
+            ctx.lineTo(r * 0.9, 5);
+            ctx.lineTo(-r * 0.9, 5);
+            ctx.closePath();
             ctx.fill();
             ctx.stroke();
-            // Visor
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 3;
+
+            // Glowing Eye Visor (horizontal line)
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = this.color;
             ctx.beginPath();
-            ctx.moveTo(-10, -5);
-            ctx.lineTo(10, -5);
+            ctx.rect(-r * 0.8, -4, r * 1.6, 3);
+            ctx.fill();
+
+            // Forehead plate detail
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.moveTo(-6, -8);
+            ctx.lineTo(0, -12);
+            ctx.lineTo(6, -8);
+            ctx.stroke();
+
+            // Shoulder guards
+            ctx.fillStyle = '#003300';
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.moveTo(-r, 8);
+            ctx.lineTo(-r * 1.4, 12);
+            ctx.lineTo(-r * 1.2, 18);
+            ctx.lineTo(-r * 0.8, 15);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(r, 8);
+            ctx.lineTo(r * 1.4, 12);
+            ctx.lineTo(r * 1.2, 18);
+            ctx.lineTo(r * 0.8, 15);
+            ctx.fill();
             ctx.stroke();
         }
     }
