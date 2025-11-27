@@ -307,15 +307,15 @@ export class Player {
             ctx.arc(0, -r * 2.2, r * 0.3, 0, Math.PI * 2);
             ctx.stroke();
 
-            // Crystal Halo (Hexagon)
+            // Crystal Halo (Hexagon) - Small, above head
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.lineWidth = 2;
             ctx.shadowBlur = 10;
             ctx.beginPath();
             for (let i = 0; i < 6; i++) {
                 const angle = (i / 6) * Math.PI * 2 + this.time;
-                const hx = Math.cos(angle) * (r * 1.6);
-                const hy = Math.sin(angle) * (r * 1.6);
+                const hx = Math.cos(angle) * (r * 0.6);
+                const hy = -r * 2.2 + Math.sin(angle) * (r * 0.6);
                 if (i === 0) ctx.moveTo(hx, hy);
                 else ctx.lineTo(hx, hy);
             }
@@ -361,7 +361,7 @@ export class Player {
 
         } else if (this.charType === 'boy') {
             // Cooler Cyber Ninja - Dark tactical helmet
-            ctx.fillStyle = '#001100';
+            ctx.fillStyle = '#004400';
             ctx.shadowBlur = 0;
             ctx.beginPath();
             // Helmet shape
