@@ -716,12 +716,23 @@ class Drone {
     }
 
     update(dt) {
+        // Validate and clear invalid target
+        if (this.game.droneTarget) {
+            if (this.game.droneTarget.markedForDeletion ||
+                this.game.droneTarget.hp <= 0 ||
+                !this.game.waveManager ||
+                !this.game.waveManager.enemies.includes(this.game.droneTarget)) {
+                this.game.droneTarget = null;
+            }
+        }
+
         // Determine orbit center
         let centerX = this.player.x;
         let centerY = this.player.y;
         let orbitSpeed = this.speed;
 
-        if (this.game.droneTarget && !this.game.droneTarget.markedForDeletion) {
+        // If valid target exists, orbit around it
+        if (this.game.droneTarget) {
             centerX = this.game.droneTarget.x;
             centerY = this.game.droneTarget.y;
             orbitSpeed = this.speed * 2; // Orbit faster around enemies
