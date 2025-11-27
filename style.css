@@ -103,53 +103,6 @@ h2 {
     box-shadow: none;
     border: 2px solid #666;
 }
-
-.cyber-btn.small {
-    font-size: min(4vw, 1rem);
-    padding: min(1vh, 8px) min(4vw, 20px);
-}
-
-/* Home Screen */
-.character-select {
-    display: flex;
-    gap: 2vw;
-    margin-bottom: 2vh;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.char-card {
-    width: min(22vw, 100px);
-    height: min(33vw, 150px);
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid #00ffff;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-}
-
-.char-card canvas {
-    width: 80% !important;
-    height: auto !important;
-    box-shadow: none;
-}
-
-.char-card span {
-    font-size: min(3.5vw, 14px);
-    margin-top: 1vh;
-}
-
-.char-card.selected {
-    background: rgba(0, 255, 255, 0.3);
-    box-shadow: 0 0 15px #00ffff;
-}
-
-/* Stats Panel */
-.stats-panel {
-    margin-top: 2vh;
 }
 
 .stats-panel p {

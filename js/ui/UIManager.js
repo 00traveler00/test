@@ -72,20 +72,20 @@ export class UIManager {
                     <button class="cyber-btn small difficulty-btn" data-diff="veryhard" style="font-size: 10px; padding: 5px 10px;">V.HARD</button>
                 </div>
             </div>
-            <div class="character-select">
-                <div class="char-card selected" data-char="girl">
+            <div class="character-select" style="display: flex; gap: 2vw; margin-bottom: 2vh; flex-wrap: wrap; justify-content: center;">
+                <div class="char-card selected" data-char="girl" style="width: min(20vw, 85px); height: min(20vw, 85px);">
                     <canvas width="64" height="64" class="char-preview"></canvas>
                     <span>Girl</span>
                 </div>
-                <div class="char-card" data-char="cat">
+                <div class="char-card" data-char="cat" style="width: min(20vw, 85px); height: min(20vw, 85px);">
                     <canvas width="64" height="64" class="char-preview"></canvas>
                     <span>Cat</span>
                 </div>
-                <div class="char-card" data-char="boy">
+                <div class="char-card" data-char="boy" style="width: min(20vw, 85px); height: min(20vw, 85px);">
                     <canvas width="64" height="64" class="char-preview"></canvas>
                     <span>Boy</span>
                 </div>
-                <div class="char-card" data-char="dog">
+                <div class="char-card" data-char="dog" style="width: min(20vw, 85px); height: min(20vw, 85px);">
                     <canvas width="64" height="64" class="char-preview"></canvas>
                     <span>Dog</span>
                 </div>
@@ -381,10 +381,10 @@ export class UIManager {
             // Clear
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Mock Player Draw
+            // Draw using same style as Player.js
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
-            const radius = 15;
+            const radius = 16;
 
             let color = '#fff';
             if (charType === 'girl') color = '#ff00ff';
@@ -395,37 +395,108 @@ export class UIManager {
             ctx.save();
             ctx.translate(cx, cy);
 
-            // Glow
-            ctx.shadowBlur = 10;
+            // Main Body Glow
+            ctx.shadowBlur = 15;
             ctx.shadowColor = color;
-
-            // Body
+            ctx.fillStyle = color;
             ctx.beginPath();
             ctx.arc(0, 0, radius, 0, Math.PI * 2);
-            ctx.fillStyle = color;
             ctx.fill();
 
-            // Inner
-            ctx.shadowBlur = 0;
+            // Tech Lines / Circuitry
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(0, 0, radius * 0.5, 0, Math.PI * 2);
+            ctx.arc(0, 0, radius * 0.7, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner White Core
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#fff';
             ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.4, 0, Math.PI * 2);
             ctx.fill();
 
-            // Accessories (Simplified)
+            // Accessories (Match Player.js style)
+            ctx.fillStyle = color;
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = color;
+
             if (charType === 'cat') {
-                ctx.beginPath(); ctx.moveTo(-8, -12); ctx.lineTo(-12, -20); ctx.lineTo(-4, -14); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(8, -12); ctx.lineTo(12, -20); ctx.lineTo(4, -14); ctx.stroke();
+                // Cyber Cat Ears
+                ctx.beginPath();
+                ctx.moveTo(-10, -12);
+                ctx.lineTo(-14, -22);
+                ctx.lineTo(-5, -16);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(10, -12);
+                ctx.lineTo(14, -22);
+                ctx.lineTo(5, -16);
+                ctx.fill();
+                ctx.stroke();
+
             } else if (charType === 'girl') {
-                ctx.beginPath(); ctx.arc(0, -12, 4, 0, Math.PI * 2); ctx.fill();
+                // Halo / Drone
+                ctx.beginPath();
+                ctx.ellipse(0, -20, 12, 4, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
+
+                // Ribbon
+                ctx.fillStyle = '#ff66ff';
+                ctx.beginPath();
+                ctx.arc(0, -12, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(0, -12);
+                ctx.lineTo(-10, -20);
+                ctx.lineTo(-10, -4);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(0, -12);
+                ctx.lineTo(10, -20);
+                ctx.lineTo(10, -4);
+                ctx.fill();
+
             } else if (charType === 'dog') {
-                ctx.beginPath(); ctx.ellipse(-12, -4, 4, 8, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(12, -4, 4, 8, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+                // Floppy Cyber Ears
+                ctx.fillStyle = '#ffaa00';
+                ctx.beginPath();
+                ctx.ellipse(-14, -4, 5, 10, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.ellipse(14, -4, 5, 10, -Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Collar
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 8, 10, 0, Math.PI);
+                ctx.stroke();
+
             } else if (charType === 'boy') {
-                ctx.beginPath(); ctx.arc(0, -4, radius, Math.PI, 0); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(18, -4); ctx.stroke();
+                // Cyber Cap
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(0, -6, radius, Math.PI, 0);
+                ctx.fill();
+                ctx.stroke();
+                // Visor
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-8, -4);
+                ctx.lineTo(8, -4);
+                ctx.stroke();
             }
 
             ctx.restore();
