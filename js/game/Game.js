@@ -179,14 +179,26 @@ export class Game {
             this.acquiredRelics = [];
             this.ene = 0;
             this.totalEneCollected = 0; // Reset total collected
+
+            // Apply Gacha (Reserved) Item if any
+            if (this.upgradeSystem.reservedRelicId) {
+                const relic = this.ui.relics.find(r => r.id === this.upgradeSystem.reservedRelicId);
+                if (relic) {
+                    console.log(`Starting run with reserved item: ${relic.name}`);
+                    const startingRelic = { ...relic };
+                    this.acquiredRelics.push(startingRelic);
+                    startingRelic.effect(this.player);
+                }
+                // Reset Gacha state after run starts
+                this.upgradeSystem.resetGachaCost();
+            }
         }
 
         // Debug Mode: Super stats
         if (this.debugMode) {
             this.player.hp = 999999999;
             this.player.maxHp = 999999999;
-            this.player.damage = 1000;
-            console.log('DEBUG MODE ACTIVE: Super HP and Damage enabled!');
+            console.log('DEBUG MODE ACTIVE: Super HP enabled!');
         }
 
         this.killCount = {}; // Track kills by type
@@ -211,11 +223,8 @@ export class Game {
             }
         }
 
-        // Spawn Boss Altar (Far from player)
-        this.waveManager.spawnAltar();
-
         // Spawn Initial Chests (Scattered)
-        const chestCount = 10;
+        const chestCount = 7;
         for (let i = 0; i < chestCount; i++) {
             const x = Math.random() * (this.worldWidth - 100) + 50;
             const y = Math.random() * (this.worldHeight - 100) + 50;
@@ -601,10 +610,61 @@ export class Game {
             // Show minimap only during active gameplay
             if (this.state === 'playing') {
                 this.minimap.draw();
+
+                // Directional Altar Guide (Boss Altar)
+                if (this.waveManager.bossAltar && this.waveManager.bossAltar.active) {
+                    this.drawDirectionalArrow(this.waveManager.bossAltar.x, this.waveManager.bossAltar.y, '#ff00ff', 'BOSS');
+                }
+                // Directional Altar Guide (Next Stage Altar)
+                if (this.nextStageAltar) {
+                    this.drawDirectionalArrow(this.nextStageAltar.x, this.nextStageAltar.y, '#00ffff', 'EXIT');
+                }
             }
         } else {
             this.drawGrid(); // Static grid for menus
         }
+    }
+
+    drawDirectionalArrow(tx, ty, color, label = "") {
+        const dx = tx - (this.camera.x + this.canvas.width / 2);
+        const dy = ty - (this.camera.y + this.canvas.height / 2);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Only draw if sufficiently far (approximately off-screen)
+        const margin = 60;
+        if (dist < Math.min(this.canvas.width, this.canvas.height) * 0.4) return;
+
+        const angle = Math.atan2(dy, dx);
+        const arrowX = Math.cos(angle) * (this.canvas.width / 2 - margin) + this.canvas.width / 2;
+        const arrowY = Math.sin(angle) * (this.canvas.height / 2 - margin) + this.canvas.height / 2;
+
+        this.ctx.save();
+        this.ctx.translate(arrowX, arrowY);
+        this.ctx.rotate(angle);
+
+        // Draw Glow
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = color;
+        this.ctx.fillStyle = color;
+
+        // Arrow Head
+        this.ctx.beginPath();
+        this.ctx.moveTo(15, 0);
+        this.ctx.lineTo(-10, -10);
+        this.ctx.lineTo(-10, 10);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Label
+        if (label) {
+            this.ctx.rotate(-angle); // Keep text horizontal
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 12px Rajdhani';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(label, 0, 25);
+        }
+
+        this.ctx.restore();
     }
 
     drawBackground() {

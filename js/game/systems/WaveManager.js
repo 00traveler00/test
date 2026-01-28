@@ -1,7 +1,7 @@
 import { Slime, Golem, Lizard, Totem, KamikazeEnemy, MissileEnemy, BeamEnemy } from '../entities/Enemy.js';
 import { BossAltar } from '../entities/BossAltar.js';
 import { Chest } from '../entities/Chest.js';
-import { Overlord, SlimeKing, MechaGolem, VoidPhantom, CrimsonDragon } from '../entities/Boss.js';
+import { Overlord, SlimeKing, MechaGolem, VoidPhantom, CrimsonDragon, StormWeaver, IronBehemoth, PrismMirror, ToxicHorror, AuraKnight, CelestialEye } from '../entities/Boss.js';
 
 export class WaveManager {
     constructor(game, initialDifficulty = 1.0, initialTime = 0) {
@@ -18,10 +18,14 @@ export class WaveManager {
         this.bossActive = false;
         this.bossAltarPos = { x: 0, y: 0 }; // Track where the altar was
         this.spawningStopped = false;
+
+        this.killsThisStage = 0;
+        this.killsNeeded = (this.game.debugMode) ? 1 : (20 + (this.game.mapLevel - 1) * 10);
+        this.altarSpawned = false;
     }
 
     spawnAltar() {
-        if (this.bossActive) return;
+        if (this.bossActive || this.altarSpawned) return;
         // Spawn near player but offset (Called by Game.js now)
         const angle = Math.random() * Math.PI * 2;
         const dist = 800; // Far enough
@@ -34,6 +38,9 @@ export class WaveManager {
 
         this.bossAltar = new BossAltar(this.game, cx, cy);
         this.bossAltarPos = { x: cx, y: cy }; // Save position
+        this.altarSpawned = true;
+
+        this.game.ui.showWarningMessage("WARNING: HIGH ENERGY SIGNAL DETECTED");
         console.log("Boss Altar Spawned at", cx, cy);
     }
 
@@ -41,9 +48,45 @@ export class WaveManager {
         this.bossActive = true;
         this.bossAltar = null; // Remove altar
 
-        // Randomly select a boss type
-        const bosses = [Overlord, SlimeKing, MechaGolem, VoidPhantom, CrimsonDragon];
-        const BossClass = bosses[Math.floor(Math.random() * bosses.length)];
+        // Select boss type
+        let BossClass;
+        if (this.game.debugMode && this.game.debugBoss && this.game.debugBoss !== 'random') {
+            const bossMap = {
+                'overlord': Overlord,
+                'slime_king': SlimeKing,
+                'mecha_golem': MechaGolem,
+                'void_phantom': VoidPhantom,
+                'crimson_dragon': CrimsonDragon,
+                'storm_weaver': StormWeaver,
+                'iron_behemoth': IronBehemoth,
+                'prism_mirror': PrismMirror,
+                'toxic_horror': ToxicHorror,
+                'aura_knight': AuraKnight,
+                'celestial_eye': CelestialEye
+            };
+            BossClass = bossMap[this.game.debugBoss] || Overlord;
+        } else {
+            const mapLevel = this.game.mapLevel || 1;
+            let candidates;
+
+            if (mapLevel >= 10) {
+                candidates = [Overlord];
+            } else {
+                switch (mapLevel) {
+                    case 1: candidates = [SlimeKing, ToxicHorror]; break;
+                    case 2: candidates = [IronBehemoth, MechaGolem]; break;
+                    case 3: candidates = [StormWeaver, AuraKnight]; break;
+                    case 4: candidates = [VoidPhantom, PrismMirror]; break;
+                    case 5: candidates = [CrimsonDragon, CelestialEye]; break;
+                    case 6: candidates = [SlimeKing, IronBehemoth]; break;
+                    case 7: candidates = [MechaGolem, ToxicHorror]; break;
+                    case 8: candidates = [VoidPhantom, PrismMirror]; break;
+                    case 9: candidates = [CrimsonDragon, CelestialEye]; break;
+                    default: candidates = [Overlord];
+                }
+            }
+            BossClass = candidates[Math.floor(Math.random() * candidates.length)];
+        }
 
         // Spawn the new Boss entity
         const boss = new BossClass(this.game, this.game.player.x, this.game.player.y - 300);
@@ -95,6 +138,17 @@ export class WaveManager {
 
         this.enemies.forEach(enemy => {
             enemy.update(dt);
+            if (enemy.hp <= 0 && !enemy.killCounted) {
+                // Enemy died this frame
+                if (!enemy.isBoss) {
+                    this.killsThisStage++;
+                    enemy.killCounted = true; // Mark as counted
+                    // Check for altar spawn
+                    if (!this.altarSpawned && this.killsThisStage >= this.killsNeeded) {
+                        this.spawnAltar();
+                    }
+                }
+            }
             if (enemy.isBoss && enemy.hp <= 0) {
                 this.game.bossDefeated();
             }

@@ -57,6 +57,23 @@ export class UIManager {
                     <span class="checkmark"></span>
                     DEBUG MODE (x100 Ene)
                 </label>
+                <div class="debug-option" style="margin-top: 15px;">
+                    <label style="color: #00ffff; font-size: 14px; display: block; margin-bottom: 5px;">TEST BOSS (Debug Only):</label>
+                    <select id="debug-boss-select" class="cyber-btn small" style="width: 100%; background: #000; color: #00ffff; border: 1px solid #00ffff;">
+                        <option value="random">RANDOM</option>
+                        <option value="overlord">OVERLORD</option>
+                        <option value="slime_king">SLIME KING</option>
+                        <option value="mecha_golem">MECHA GOLEM</option>
+                        <option value="void_phantom">VOID PHANTOM</option>
+                        <option value="crimson_dragon">CRIMSON DRAGON</option>
+                        <option value="storm_weaver">STORM WEAVER</option>
+                        <option value="iron_behemoth">IRON BEHEMOTH</option>
+                        <option value="prism_mirror">PRISM MIRROR</option>
+                        <option value="toxic_horror">TOXIC HORROR</option>
+                        <option value="aura_knight">AURA KNIGHT</option>
+                        <option value="celestial_eye">CELESTIAL EYE</option>
+                    </select>
+                </div>
             </div>
             <button id="btn-close-options" class="cyber-btn secondary">CLOSE</button>
         `);
@@ -92,9 +109,15 @@ export class UIManager {
             </div>
             <div class="stats-panel">
                 <p>Money: <span id="player-money">0</span></p>
-                <div class="upgrades">
-                    <button id="btn-up-hp" class="cyber-btn small">HP Up <span id="cost-hp">100</span></button>
-                    <button id="btn-up-dmg" class="cyber-btn small">Dmg Up <span id="cost-dmg">150</span></button>
+                <div class="gacha-container" style="margin-top: 10px;">
+                    <button id="btn-gacha" class="cyber-btn" style="width: 100%; border-color: #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.3);">TECH SALVAGE <span id="gacha-cost">100</span></button>
+                    <p style="font-size: 10px; color: #aaa; margin-top: 5px;">Get a random item for the next run!</p>
+                </div>
+            </div>
+            <div id="reserved-item-panel" style="margin-bottom: 2vh; min-height: 60px;">
+                <h3 style="font-size: 12px; color: #00ffff; margin-bottom: 5px;">RESERVED ITEM</h3>
+                <div id="reserved-item-preview" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(0,255,255,0.05); border: 1px solid rgba(0,255,255,0.2); padding: 5px; border-radius: 5px;">
+                    <span style="color: #666; font-style: italic;">None</span>
                 </div>
             </div>
             <button id="btn-mission" class="cyber-btn">START MISSION</button>
@@ -124,7 +147,11 @@ export class UIManager {
                     <!-- Center is now empty or can be used for other things -->
                 </div>
                 <div class="hud-right">
-                    <!-- Minimap will be positioned here via absolute positioning -->
+                    <!-- Minimap is positioned via CSS -->
+                    <div id="kill-counter-container" class="kill-counter-container">
+                        <span id="kill-counter-label" class="kill-label">SIGNAL:</span>
+                        <span id="kill-counter-value" class="kill-value">20</span>
+                    </div>
                 </div>
             </div>
             
@@ -241,7 +268,7 @@ export class UIManager {
 
         // Reward Screen (New)
         this.screens.reward = this.createScreen('reward-screen', `
-            <h2>LEVEL UP! CHOOSE A REWARD</h2>
+            <h2>SELECT ITEM</h2>
             <div id="reward-container" class="shop-container">
                 <!-- Relic cards injected here -->
             </div>
@@ -310,20 +337,28 @@ export class UIManager {
             });
         }
 
+        const selBoss = document.getElementById('debug-boss-select');
+        if (selBoss) {
+            selBoss.addEventListener('change', (e) => {
+                this.game.debugBoss = e.target.value;
+                console.log('Debug Boss Set:', this.game.debugBoss);
+            });
+        }
+
         // Home
         this.bindButton('btn-mission', () => {
             this.game.startRun();
             this.game.setState('playing');
         });
 
-        this.bindButton('btn-up-hp', () => {
-            this.game.upgradeSystem.purchase('maxHp');
-            this.updateHome();
-        });
-
-        this.bindButton('btn-up-dmg', () => {
-            this.game.upgradeSystem.purchase('damage');
-            this.updateHome();
+        this.bindButton('btn-gacha', () => {
+            const relic = this.game.upgradeSystem.performGacha();
+            if (relic) {
+                this.showMessage(`TECH SALVAGE: ${relic.name}!`);
+                this.updateHome();
+            } else {
+                this.showMessage(`Not enough Money!`, 2000);
+            }
         });
 
         // Back to Title from Home
@@ -601,8 +636,11 @@ export class UIManager {
         const currentDifficulty = fixedDifficulty || (this.game.waveManager ? this.game.waveManager.difficulty : 1.0);
         const priceScaling = 0.6 * Math.pow(currentDifficulty, 2.0);
 
+        // Stage-based bonus: +50 per stage (Stage 1 = +0, Stage 2 = +50, etc.)
+        const stageBonus = Math.max(0, (this.game.mapLevel - 1) * 50);
+
         choices.forEach(relic => {
-            const scaledCost = Math.ceil(relic.cost * priceScaling);
+            const scaledCost = Math.ceil(relic.cost * priceScaling) + stageBonus;
             const card = document.createElement('div');
             card.className = 'relic-card';
 
@@ -1043,14 +1081,57 @@ export class UIManager {
         if (difficulty !== undefined) {
             document.getElementById('game-difficulty').innerText = `Lv. ${difficulty.toFixed(2)}`;
         }
+
+        // Update Kill Counter
+        const killCounter = document.getElementById('kill-counter-value');
+        if (killCounter && this.game.waveManager) {
+            const remaining = Math.max(0, this.game.waveManager.killsNeeded - this.game.waveManager.killsThisStage);
+            if (this.game.waveManager.altarSpawned) {
+                killCounter.innerText = "READY";
+                killCounter.style.color = "#ff00ff";
+                if (document.getElementById('kill-counter-label')) {
+                    document.getElementById('kill-counter-label').innerText = "BOSS:";
+                }
+            } else {
+                killCounter.innerText = remaining;
+                killCounter.style.color = "#00ffff";
+                if (document.getElementById('kill-counter-label')) {
+                    document.getElementById('kill-counter-label').innerText = "SIGNAL:";
+                }
+            }
+        }
     }
 
     updateHome() {
         document.getElementById('player-money').innerText = this.game.money;
-        document.getElementById('cost-hp').innerText = this.game.upgradeSystem.upgrades.maxHp.cost;
-        document.getElementById('cost-dmg').innerText = this.game.upgradeSystem.upgrades.damage.cost;
-        document.getElementById('cost-hp').innerText = this.game.upgradeSystem.upgrades.maxHp.cost;
-        document.getElementById('cost-dmg').innerText = this.game.upgradeSystem.upgrades.damage.cost;
+        document.getElementById('gacha-cost').innerText = this.game.upgradeSystem.gachaCost;
+
+        // Update Reserved Item Preview
+        const preview = document.getElementById('reserved-item-preview');
+        if (preview) {
+            preview.innerHTML = '';
+            const reservedId = this.game.upgradeSystem.reservedRelicId;
+            if (reservedId) {
+                const relic = this.relics.find(r => r.id === reservedId);
+                if (relic) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 40;
+                    canvas.height = 40;
+                    this.drawRelicIcon(canvas.getContext('2d'), relic.id, 40, 40, relic.color);
+                    preview.appendChild(canvas);
+
+                    const info = document.createElement('div');
+                    info.style.textAlign = 'left';
+                    info.innerHTML = `
+                        <div style="color:${relic.color}; font-size: 14px; font-weight: bold;">${relic.name}</div>
+                        <div style="font-size: 10px; color: #aaa;">${relic.desc}</div>
+                    `;
+                    preview.appendChild(info);
+                }
+            } else {
+                preview.innerHTML = '<span style="color: #666; font-style: italic;">None</span>';
+            }
+        }
 
         // Update Difficulty Buttons
         const diffBtns = document.querySelectorAll('.difficulty-btn');
@@ -1597,6 +1678,70 @@ export class UIManager {
             ctx.lineTo(cx + 14, cy + 4);
             ctx.fill();
             ctx.globalAlpha = 1.0;
+        } else if (type === 'storm_weaver') {
+            // Storm Weaver: Spider with lightning arcs
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, 10, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Legs
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 4; i++) {
+                ctx.moveTo(cx - 8, cy - 8 + i * 4);
+                ctx.lineTo(cx - 16, cy - 12 + i * 4);
+                ctx.moveTo(cx + 8, cy - 8 + i * 4);
+                ctx.lineTo(cx + 16, cy - 12 + i * 4);
+            }
+            ctx.stroke();
+            // Bolt
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.moveTo(cx - 4, cy - 4); ctx.lineTo(cx + 4, cy); ctx.lineTo(cx - 2, cy + 2); ctx.lineTo(cx + 2, cy + 6);
+            ctx.stroke();
+        } else if (type === 'iron_behemoth') {
+            // Iron Behemoth: Tanky crab
+            ctx.fillStyle = '#666';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.fillRect(cx - 16, cy - 10, 6, 12);
+            ctx.fillRect(cx + 10, cy - 10, 6, 12);
+        } else if (type === 'prism_mirror') {
+            // Prism Mirror: Crystalline
+            ctx.strokeStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - 14); ctx.lineTo(cx + 12, cy); ctx.lineTo(cx, cy + 14); ctx.lineTo(cx - 12, cy); ctx.closePath();
+            ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.5;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        } else if (type === 'toxic_horror') {
+            // Toxic Horror: Blobs
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.6)';
+            ctx.beginPath();
+            ctx.arc(cx - 4, cy, 8, 0, Math.PI * 2);
+            ctx.arc(cx + 4, cy + 2, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ff00ff'; // Toxic core
+            ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2); ctx.fill();
+        } else if (type === 'aura_knight') {
+            // Aura Knight: Helmet
+            ctx.fillStyle = '#333';
+            ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = color;
+            ctx.fillRect(cx - 5, cy - 4, 14, 3); // Visor
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath(); ctx.moveTo(cx - 5, cy); ctx.lineTo(cx - 15, cy + 10); ctx.lineTo(cx - 15, cy - 5); ctx.fill();
+            ctx.globalAlpha = 1.0;
+        } else if (type === 'celestial_eye') {
+            // Celestial Eye: Satellite
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.arc(cx, cy, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.strokeRect(cx - 15, cy - 3, 30, 6);
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
         }
     }
 
@@ -1618,6 +1763,34 @@ export class UIManager {
         msgDiv.style.zIndex = '1000';
         msgDiv.style.pointerEvents = 'none';
         msgDiv.style.animation = 'fadeInOut 0.5s ease-in-out';
+
+        this.uiLayer.appendChild(msgDiv);
+
+        setTimeout(() => {
+            msgDiv.style.opacity = '0';
+            setTimeout(() => msgDiv.remove(), 500);
+        }, duration);
+    }
+
+    showWarningMessage(text, duration = 4000) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'warning-message';
+        msgDiv.innerText = text;
+        msgDiv.style.position = 'absolute';
+        msgDiv.style.top = '30%';
+        msgDiv.style.left = '50%';
+        msgDiv.style.transform = 'translate(-50%, -50%)';
+        msgDiv.style.background = 'rgba(255, 0, 0, 0.2)';
+        msgDiv.style.color = '#ff0000';
+        msgDiv.style.padding = '30px 60px';
+        msgDiv.style.border = '4px double #ff0000';
+        msgDiv.style.fontSize = '32px';
+        msgDiv.style.fontWeight = 'bold';
+        msgDiv.style.zIndex = '1000';
+        msgDiv.style.pointerEvents = 'none';
+        msgDiv.style.textAlign = 'center';
+        msgDiv.style.textShadow = '0 0 20px #ff0000';
+        msgDiv.style.animation = 'warningPulse 0.5s infinite alternate, fadeInOut 0.5s ease-in-out';
 
         this.uiLayer.appendChild(msgDiv);
 

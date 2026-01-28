@@ -22,13 +22,13 @@ export class Chest {
         const selected = [];
         const available = [...this.game.ui.relics];
 
-        // 3つのアイテムを選択
+        // Select 3 items
         for (let i = 0; i < 3 && available.length > 0; i++) {
-            // 残っているアイテムの合計weightを計算
+            // Calculate the total weight of remaining items
             const totalWeight = available.reduce((sum, r) => sum + r.weight, 0);
             let random = Math.random() * totalWeight;
 
-            // weightに基づいて選択
+            // Select based on weight
             let selectedRelic = null;
             for (const relic of available) {
                 random -= relic.weight;

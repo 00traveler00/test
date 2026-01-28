@@ -827,3 +827,443 @@ export class CrimsonDragon extends BaseBoss {
         ctx.restore();
     }
 }
+
+// --- Boss 6: Storm Weaver (Electric Spider) ---
+export class StormWeaver extends BaseBoss {
+    constructor(game, x, y) {
+        super(game, x, y, 'storm_weaver');
+        this.name = 'STORM WEAVER';
+        this.color = '#ffff00';
+        this.radius = 70;
+        this.webTimer = 0;
+    }
+
+    switchState() {
+        this.stateTimer = 0;
+        const rand = Math.random();
+        if (this.state === 'chase') {
+            if (rand < 0.5) this.state = 'web';
+            else this.state = 'lightning';
+        } else {
+            this.state = 'chase';
+            this.stateDuration = 2.0;
+        }
+    }
+
+    updateState(dt) {
+        if (this.state === 'chase') this.behaviorChase(dt);
+        else if (this.state === 'web') this.behaviorWeb(dt);
+        else if (this.state === 'lightning') this.behaviorLightning(dt);
+    }
+
+    behaviorWeb(dt) {
+        if (this.stateTimer % 0.5 < dt) {
+            // Spawn slowing "web" particles or projectiles
+            const p = new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'plasma', this.damage * 0.5);
+            p.color = '#ffffff';
+            p.speed = 150;
+            this.game.enemyProjectiles.push(p);
+        }
+    }
+
+    behaviorLightning(dt) {
+        if (this.stateTimer % 0.8 < dt) {
+            const p = new EnemyProjectile(this.game, this.x, this.y, this.game.player, 'plasma', this.damage);
+            p.speed = 400;
+            p.color = '#ffff00';
+            this.game.enemyProjectiles.push(p);
+        }
+    }
+
+    drawShape(ctx) {
+        ctx.save();
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+
+        // Spider Body
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 30, 40, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Legs
+        const legWiggle = Math.sin(this.pulse);
+        for (let i = 0; i < 8; i++) {
+            const side = i < 4 ? -1 : 1;
+            const yPos = (i % 4) * 20 - 30;
+            ctx.beginPath();
+            ctx.moveTo(side * 10, yPos);
+            ctx.lineTo(side * 60, yPos + legWiggle * 10);
+            ctx.lineTo(side * 80, yPos + 20 + legWiggle * 5);
+            ctx.stroke();
+        }
+
+        // Electric Glow
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#00ffff';
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(0, -20, 5, 0, Math.PI * 2);
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+}
+
+// --- Boss 7: Iron Behemoth (Armored Crab) ---
+export class IronBehemoth extends BaseBoss {
+    constructor(game, x, y) {
+        super(game, x, y, 'iron_behemoth');
+        this.name = 'IRON BEHEMOTH';
+        this.color = '#ff8800';
+        this.radius = 110;
+        this.spinAngle = 0;
+    }
+
+    switchState() {
+        this.stateTimer = 0;
+        const rand = Math.random();
+        if (this.state === 'chase') {
+            if (rand < 0.5) this.state = 'mortar';
+            else this.state = 'spin';
+        } else {
+            this.state = 'chase';
+            this.stateDuration = 3.0;
+        }
+    }
+
+    updateState(dt) {
+        if (this.state === 'chase') this.behaviorChase(dt);
+        else if (this.state === 'mortar') this.behaviorMortar(dt);
+        else if (this.state === 'spin') this.behaviorSpin(dt);
+    }
+
+    behaviorMortar(dt) {
+        if (this.stateTimer % 0.4 < dt) {
+            const tx = this.game.player.x + (Math.random() - 0.5) * 200;
+            const ty = this.game.player.y + (Math.random() - 0.5) * 200;
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'fireball', this.damage);
+            p.speed = 150;
+            this.game.enemyProjectiles.push(p);
+        }
+    }
+
+    behaviorSpin(dt) {
+        this.spinAngle += dt * 10;
+        this.behaviorChase(dt * 1.5); // Charge faster while spinning
+    }
+
+    drawShape(ctx) {
+        ctx.save();
+        ctx.rotate(this.state === 'spin' ? this.spinAngle : 0);
+
+        ctx.fillStyle = '#666';
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 5;
+
+        // Shell
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Claws
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.radius - 20, -50, 40, 40);
+        ctx.fillRect(-this.radius - 20, -50, 40, 40);
+
+        // Industrial Detail
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(-this.radius + 20, 0);
+        ctx.lineTo(this.radius - 20, 0);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+}
+
+// --- Boss 8: Prism Mirror (Crystal Entity) ---
+export class PrismMirror extends BaseBoss {
+    constructor(game, x, y) {
+        super(game, x, y, 'prism_mirror');
+        this.name = 'PRISM MIRROR';
+        this.color = '#ffffff';
+        this.radius = 60;
+        this.hue = 0;
+    }
+
+    switchState() {
+        this.stateTimer = 0;
+        this.state = this.state === 'chase' ? 'beam' : 'chase';
+        this.stateDuration = 3.0;
+    }
+
+    updateState(dt) {
+        this.hue = (this.hue + dt * 100) % 360;
+        this.color = `hsl(${this.hue}, 100%, 70%)`;
+        if (this.state === 'chase') this.behaviorChase(dt);
+        else this.behaviorBeam(dt);
+    }
+
+    behaviorBeam(dt) {
+        if (this.stateTimer % 1.0 < dt) {
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 / 8) * i + this.stateTimer;
+                const tx = this.x + Math.cos(angle) * 100;
+                const ty = this.y + Math.sin(angle) * 100;
+                const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'plasma', this.damage);
+                p.color = this.color;
+                this.game.enemyProjectiles.push(p);
+            }
+        }
+    }
+
+    drawShape(ctx) {
+        ctx.save();
+        ctx.rotate(this.pulse * 0.1);
+
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.color;
+
+        // Diamond Shape
+        ctx.beginPath();
+        ctx.moveTo(0, -this.radius);
+        ctx.lineTo(this.radius, 0);
+        ctx.lineTo(0, this.radius);
+        ctx.lineTo(-this.radius, 0);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Inner Fragments
+        for (let i = 0; i < 4; i++) {
+            ctx.rotate(Math.PI / 2);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(this.radius * 0.5, this.radius * 0.5);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+}
+
+// --- Boss 9: Toxic Horror (Bio-Mutant) ---
+export class ToxicHorror extends BaseBoss {
+    constructor(game, x, y) {
+        super(game, x, y, 'toxic_horror');
+        this.name = 'TOXIC HORROR';
+        this.color = '#00ff44';
+        this.radius = 80;
+    }
+
+    switchState() {
+        this.stateTimer = 0;
+        this.state = this.state === 'chase' ? 'burst' : 'chase';
+    }
+
+    updateState(dt) {
+        if (this.state === 'chase') {
+            this.behaviorChase(dt);
+            // Leave poison trail (Visual for now)
+            if (this.stateTimer % 0.2 < dt) {
+                this.game.particles.push(new Particle(this.game, this.x, this.y, '#00ff44'));
+            }
+        } else {
+            this.behaviorBurst(dt);
+        }
+    }
+
+    behaviorBurst(dt) {
+        if (this.stateTimer > 0.5 && this.stateTimer - dt <= 0.5) {
+            for (let i = 0; i < 20; i++) {
+                const angle = (Math.PI * 2 / 20) * i;
+                const tx = this.x + Math.cos(angle) * 100;
+                const ty = this.y + Math.sin(angle) * 100;
+                const p = new EnemyProjectile(this.game, this.x, this.y, { x: tx, y: ty }, 'slime', this.damage);
+                this.game.enemyProjectiles.push(p);
+            }
+        }
+    }
+
+    drawShape(ctx) {
+        ctx.save();
+        const wobble = Math.sin(this.pulse * 2) * 10;
+
+        ctx.fillStyle = 'rgba(0, 255, 68, 0.4)';
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 4;
+
+        // Blobby Body
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI * 2 / 8) * i;
+            const r = this.radius + (i % 2 === 0 ? wobble : -wobble);
+            const x = Math.cos(angle) * r;
+            const y = Math.sin(angle) * r;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Pulsing Organ
+        ctx.fillStyle = '#ff00ff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 20 + wobble, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+}
+
+// --- Boss 10: Aura Knight (Neon Swordsman) ---
+export class AuraKnight extends BaseBoss {
+    constructor(game, x, y) {
+        super(game, x, y, 'aura_knight');
+        this.name = 'AURA KNIGHT';
+        this.color = '#00ffff';
+        this.radius = 50;
+        this.dashAngle = 0;
+    }
+
+    switchState() {
+        this.stateTimer = 0;
+        const rand = Math.random();
+        if (this.state === 'chase') {
+            if (rand < 0.6) this.state = 'dash';
+            else this.state = 'waves';
+        } else {
+            this.state = 'chase';
+            this.stateDuration = 2.0;
+        }
+    }
+
+    updateState(dt) {
+        if (this.state === 'chase') {
+            this.behaviorChase(dt);
+            this.angle = Math.atan2(this.game.player.y - this.y, this.game.player.x - this.x);
+        }
+        else if (this.state === 'dash') this.behaviorDash(dt);
+        else if (this.state === 'waves') this.behaviorWaves(dt);
+    }
+
+    behaviorDash(dt) {
+        if (this.stateTimer < 0.5) {
+            this.dashAngle = Math.atan2(this.game.player.y - this.y, this.game.player.x - this.x);
+        } else {
+            this.x += Math.cos(this.dashAngle) * 600 * dt;
+            this.y += Math.sin(this.dashAngle) * 600 * dt;
+        }
+    }
+
+    behaviorWaves(dt) {
+        if (this.stateTimer % 0.3 < dt) {
+            const angle = Math.atan2(this.game.player.y - this.y, this.game.player.x - this.x);
+            const p = new EnemyProjectile(this.game, this.x, this.y, { x: this.x + Math.cos(angle) * 100, y: this.y + Math.sin(angle) * 100 }, 'plasma', this.damage);
+            p.radius = 15;
+            p.speed = 300;
+            this.game.enemyProjectiles.push(p);
+        }
+    }
+
+    drawShape(ctx) {
+        ctx.save();
+        ctx.rotate(this.angle);
+
+        // Knight Helmet
+        ctx.fillStyle = '#111';
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Visor
+        ctx.fillStyle = this.color;
+        ctx.fillRect(-10, -20, 40, 5);
+
+        // Cape / Aura
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(-this.radius, 0);
+        ctx.lineTo(-this.radius - 40, -20 + Math.sin(this.pulse) * 10);
+        ctx.lineTo(-this.radius - 40, 20 + Math.sin(this.pulse + 1) * 10);
+        ctx.fill();
+
+        ctx.restore();
+    }
+}
+
+// --- Boss 11: Celestial Eye (Sentient Satellite) ---
+export class CelestialEye extends BaseBoss {
+    constructor(game, x, y) {
+        super(game, x, y, 'celestial_eye');
+        this.name = 'CELESTIAL EYE';
+        this.color = '#ffcc00';
+        this.radius = 60;
+    }
+
+    switchState() {
+        this.stateTimer = 0;
+        this.state = this.state === 'chase' ? 'orbital' : 'chase';
+    }
+
+    updateState(dt) {
+        if (this.state === 'chase') {
+            this.behaviorChase(dt * 0.5);
+        } else {
+            this.behaviorOrbital(dt);
+        }
+    }
+
+    behaviorOrbital(dt) {
+        if (this.stateTimer % 1.5 < dt) {
+            // "Orbital Laser" - just a fast spread
+            for (let i = 0; i < 3; i++) {
+                const angle = Math.atan2(this.game.player.y - this.y, this.game.player.x - this.x) + (i - 1) * 0.2;
+                const p = new EnemyProjectile(this.game, this.x, this.y, { x: this.x + Math.cos(angle) * 100, y: this.y + Math.sin(angle) * 100 }, 'plasma', this.damage * 2);
+                p.speed = 500;
+                p.color = '#ffcc00';
+                this.game.enemyProjectiles.push(p);
+            }
+        }
+    }
+
+    drawShape(ctx) {
+        ctx.save();
+
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 4;
+
+        // Satellite Frame
+        ctx.strokeRect(-this.radius, -10, this.radius * 2, 20);
+
+        // Large Eye
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Pupil
+        ctx.fillStyle = '#ffcc00';
+        const dx = (this.game.player.x - this.x) / 100;
+        const dy = (this.game.player.y - this.y) / 100;
+        ctx.beginPath();
+        ctx.arc(Math.max(-10, Math.min(10, dx)), Math.max(-10, Math.min(10, dy)), 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Solar Panels
+        ctx.fillStyle = 'rgba(0, 100, 255, 0.5)';
+        ctx.fillRect(-this.radius - 30, -30, 30, 60);
+        ctx.fillRect(this.radius, -30, 30, 60);
+
+        ctx.restore();
+    }
+}
