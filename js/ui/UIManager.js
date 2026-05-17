@@ -8,31 +8,89 @@ export class UIManager {
         // レアリティ: common (48%), rare (35%), epic (15%), legendary (2%)
         // 価格は基礎値の20%減（序盤の成長をしやすくするため）
         this.relics = [
-            // Common (コモン) - 基本的な強化
-            { id: 'atk_up', name: 'Cyber Katana', desc: 'Attack Damage +10%', cost: 12, rarity: 'common', color: '#ff4444', rarityBorder: '#888888', weight: 7, effect: (p) => p.damage *= 1.1 },
-            { id: 'spd_up', name: 'Neko Headphones', desc: 'Move Speed +15%', cost: 16, rarity: 'common', color: '#4444ff', rarityBorder: '#888888', weight: 7, effect: (p) => p.speed *= 1.15 },
-            { id: 'hp_up', name: 'Energy Drink', desc: 'Max HP +30', cost: 20, rarity: 'common', color: '#44ff44', rarityBorder: '#888888', weight: 7, effect: (p) => { p.maxHp += 30; p.hp += 30; } },
-            { id: 'rate_up', name: 'Overclock Chip', desc: 'Fire Rate +10%', cost: 14, rarity: 'common', color: '#ffaa00', rarityBorder: '#888888', weight: 7, effect: (p) => p.shootInterval *= 0.9 },
-            { id: 'pierce_shot', name: 'Plasma Orb', desc: 'Fire penetrating orbs +1', cost: 28, rarity: 'rare', color: '#00aaff', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.pierceShotCount) p.pierceShotCount = 0; p.pierceShotCount++; } },
-            { id: 'hp_regen', name: 'Nano Repair', desc: 'HP Regen +0.5/sec', cost: 18, rarity: 'common', color: '#44ff88', rarityBorder: '#888888', weight: 7, effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 0.5; } },
-            { id: 'crit_chance', name: 'Lucky Dice', desc: 'Crit Chance +10%', cost: 14, rarity: 'common', color: '#ffdd00', rarityBorder: '#888888', weight: 7, effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.1; } },
-            { id: 'projectile_size', name: 'Amplifier Core', desc: 'Projectile Size +25%', cost: 13, rarity: 'common', color: '#ff6600', rarityBorder: '#888888', weight: 7, effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.25; } },
+            // ----------------------------------------------------
+            // 4-Tier Stat Boosts
+            // ----------------------------------------------------
+            // 1. Attack Damage
+            { id: 'atk_up_1', name: 'Cyber Katana (C)', desc: 'Attack Damage +10%', cost: 12, rarity: 'common', color: '#ff4444', rarityBorder: '#888888', weight: 10, category: 'red', effect: (p) => p.damage *= 1.10 },
+            { id: 'atk_up_2', name: 'Cyber Katana (R)', desc: 'Attack Damage +15%', cost: 18, rarity: 'rare', color: '#ff4444', rarityBorder: '#4466ff', weight: 5, category: 'red', effect: (p) => p.damage *= 1.15 },
+            { id: 'atk_up_3', name: 'Cyber Katana (E)', desc: 'Attack Damage +20%', cost: 26, rarity: 'epic', color: '#ff4444', rarityBorder: '#aa00ff', weight: 2, category: 'red', effect: (p) => p.damage *= 1.20 },
+            { id: 'atk_up_4', name: 'Cyber Katana (L)', desc: 'Attack Damage +25%', cost: 40, rarity: 'legendary', color: '#ff4444', rarityBorder: '#ff8800', weight: 1, category: 'red', effect: (p) => p.damage *= 1.25 },
 
-            // Rare (レア) - 便利な強化
-            { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 10, rarity: 'rare', color: '#00ffff', rarityBorder: '#4466ff', weight: 7, effect: (p) => { /* Handled in Drop */ } },
-            { id: 'shield_gen', name: 'Energy Barrier', desc: 'Shield absorbs 20 damage', cost: 28, rarity: 'rare', color: '#8888ff', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.shield) p.shield = 0; p.shield += 20; if (!p.maxShield) p.maxShield = 0; p.maxShield += 20; } },
-            { id: 'multishot', name: 'Splitter Module', desc: 'Shoot 2 extra bullets', cost: 32, rarity: 'rare', color: '#ff4488', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.multiShotCount) p.multiShotCount = 1; p.multiShotCount += 1; } },
-            { id: 'armor_plate', name: 'Titanium Plating', desc: 'Damage taken -15%', cost: 30, rarity: 'rare', color: '#999999', rarityBorder: '#4466ff', weight: 7, effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.85; } },
+            // 2. Move Speed
+            { id: 'spd_up_1', name: 'Neko Headphones (C)', desc: 'Move Speed +10%', cost: 12, rarity: 'common', color: '#4444ff', rarityBorder: '#888888', weight: 10, category: 'blue', effect: (p) => p.speed *= 1.10 },
+            { id: 'spd_up_2', name: 'Neko Headphones (R)', desc: 'Move Speed +15%', cost: 18, rarity: 'rare', color: '#4444ff', rarityBorder: '#4466ff', weight: 5, category: 'blue', effect: (p) => p.speed *= 1.15 },
+            { id: 'spd_up_3', name: 'Neko Headphones (E)', desc: 'Move Speed +20%', cost: 26, rarity: 'epic', color: '#4444ff', rarityBorder: '#aa00ff', weight: 2, category: 'blue', effect: (p) => p.speed *= 1.20 },
+            { id: 'spd_up_4', name: 'Neko Headphones (L)', desc: 'Move Speed +25%', cost: 40, rarity: 'legendary', color: '#4444ff', rarityBorder: '#ff8800', weight: 1, category: 'blue', effect: (p) => p.speed *= 1.25 },
+
+            // 3. Max HP
+            { id: 'hp_up_1', name: 'Energy Drink (C)', desc: 'Max HP +30', cost: 12, rarity: 'common', color: '#44ff44', rarityBorder: '#888888', weight: 10, category: 'green', effect: (p) => { p.maxHp += 30; p.hp += 30; } },
+            { id: 'hp_up_2', name: 'Energy Drink (R)', desc: 'Max HP +50', cost: 18, rarity: 'rare', color: '#44ff44', rarityBorder: '#4466ff', weight: 5, category: 'green', effect: (p) => { p.maxHp += 50; p.hp += 50; } },
+            { id: 'hp_up_3', name: 'Energy Drink (E)', desc: 'Max HP +80', cost: 26, rarity: 'epic', color: '#44ff44', rarityBorder: '#aa00ff', weight: 2, category: 'green', effect: (p) => { p.maxHp += 80; p.hp += 80; } },
+            { id: 'hp_up_4', name: 'Energy Drink (L)', desc: 'Max HP +120', cost: 40, rarity: 'legendary', color: '#44ff44', rarityBorder: '#ff8800', weight: 1, category: 'green', effect: (p) => { p.maxHp += 120; p.hp += 120; } },
+
+            // 4. Fire Rate (Lower interval is better)
+            { id: 'rate_up_1', name: 'Overclock Chip (C)', desc: 'Fire Rate +10%', cost: 12, rarity: 'common', color: '#ffaa00', rarityBorder: '#888888', weight: 10, category: 'red', effect: (p) => p.shootInterval *= 0.90 },
+            { id: 'rate_up_2', name: 'Overclock Chip (R)', desc: 'Fire Rate +15%', cost: 18, rarity: 'rare', color: '#ffaa00', rarityBorder: '#4466ff', weight: 5, category: 'red', effect: (p) => p.shootInterval *= 0.85 },
+            { id: 'rate_up_3', name: 'Overclock Chip (E)', desc: 'Fire Rate +20%', cost: 26, rarity: 'epic', color: '#ffaa00', rarityBorder: '#aa00ff', weight: 2, category: 'red', effect: (p) => p.shootInterval *= 0.80 },
+            { id: 'rate_up_4', name: 'Overclock Chip (L)', desc: 'Fire Rate +25%', cost: 40, rarity: 'legendary', color: '#ffaa00', rarityBorder: '#ff8800', weight: 1, category: 'red', effect: (p) => p.shootInterval *= 0.75 },
+
+            // 5. HP Regen
+            { id: 'hp_regen_1', name: 'Nano Repair (C)', desc: 'HP Regen +0.5/sec', cost: 12, rarity: 'common', color: '#44ff88', rarityBorder: '#888888', weight: 10, category: 'green', effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 0.5; } },
+            { id: 'hp_regen_2', name: 'Nano Repair (R)', desc: 'HP Regen +1.0/sec', cost: 18, rarity: 'rare', color: '#44ff88', rarityBorder: '#4466ff', weight: 5, category: 'green', effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 1.0; } },
+            { id: 'hp_regen_3', name: 'Nano Repair (E)', desc: 'HP Regen +1.5/sec', cost: 26, rarity: 'epic', color: '#44ff88', rarityBorder: '#aa00ff', weight: 2, category: 'green', effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 1.5; } },
+            { id: 'hp_regen_4', name: 'Nano Repair (L)', desc: 'HP Regen +2.0/sec', cost: 40, rarity: 'legendary', color: '#44ff88', rarityBorder: '#ff8800', weight: 1, category: 'green', effect: (p) => { if (!p.hpRegen) p.hpRegen = 0; p.hpRegen += 2.0; } },
+
+            // 6. Crit Chance
+            { id: 'crit_chance_1', name: 'Lucky Dice (C)', desc: 'Crit Chance +5%', cost: 12, rarity: 'common', color: '#ffdd00', rarityBorder: '#888888', weight: 10, category: 'red', effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.05; } },
+            { id: 'crit_chance_2', name: 'Lucky Dice (R)', desc: 'Crit Chance +10%', cost: 18, rarity: 'rare', color: '#ffdd00', rarityBorder: '#4466ff', weight: 5, category: 'red', effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.10; } },
+            { id: 'crit_chance_3', name: 'Lucky Dice (E)', desc: 'Crit Chance +15%', cost: 26, rarity: 'epic', color: '#ffdd00', rarityBorder: '#aa00ff', weight: 2, category: 'red', effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.15; } },
+            { id: 'crit_chance_4', name: 'Lucky Dice (L)', desc: 'Crit Chance +20%', cost: 40, rarity: 'legendary', color: '#ffdd00', rarityBorder: '#ff8800', weight: 1, category: 'red', effect: (p) => { if (!p.critChance) p.critChance = 0; p.critChance += 0.20; } },
+
+            // 7. Projectile Size
+            { id: 'projectile_size_1', name: 'Amplifier Core (C)', desc: 'Proj Size +15%', cost: 12, rarity: 'common', color: '#ff6600', rarityBorder: '#888888', weight: 10, category: 'red', effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.15; } },
+            { id: 'projectile_size_2', name: 'Amplifier Core (R)', desc: 'Proj Size +30%', cost: 18, rarity: 'rare', color: '#ff6600', rarityBorder: '#4466ff', weight: 5, category: 'red', effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.30; } },
+            { id: 'projectile_size_3', name: 'Amplifier Core (E)', desc: 'Proj Size +45%', cost: 26, rarity: 'epic', color: '#ff6600', rarityBorder: '#aa00ff', weight: 2, category: 'red', effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.45; } },
+            { id: 'projectile_size_4', name: 'Amplifier Core (L)', desc: 'Proj Size +60%', cost: 40, rarity: 'legendary', color: '#ff6600', rarityBorder: '#ff8800', weight: 1, category: 'red', effect: (p) => { if (!p.projectileSize) p.projectileSize = 1; p.projectileSize *= 1.60; } },
+
+            // 8. Damage Reduction (Armor)
+            { id: 'armor_plate_1', name: 'Titanium Plating (C)', desc: 'Dmg Taken -10%', cost: 12, rarity: 'common', color: '#999999', rarityBorder: '#888888', weight: 10, category: 'green', effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.90; } },
+            { id: 'armor_plate_2', name: 'Titanium Plating (R)', desc: 'Dmg Taken -15%', cost: 18, rarity: 'rare', color: '#999999', rarityBorder: '#4466ff', weight: 5, category: 'green', effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.85; } },
+            { id: 'armor_plate_3', name: 'Titanium Plating (E)', desc: 'Dmg Taken -20%', cost: 26, rarity: 'epic', color: '#999999', rarityBorder: '#aa00ff', weight: 2, category: 'green', effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.80; } },
+            { id: 'armor_plate_4', name: 'Titanium Plating (L)', desc: 'Dmg Taken -25%', cost: 40, rarity: 'legendary', color: '#999999', rarityBorder: '#ff8800', weight: 1, category: 'green', effect: (p) => { if (!p.damageMultiplier) p.damageMultiplier = 1.0; p.damageMultiplier *= 0.75; } },
+
+            // ----------------------------------------------------
+            // Unique / Utility / Method items (Kept from original)
+            // ----------------------------------------------------
+            { id: 'pierce_shot', name: 'Plasma Orb', desc: 'Fire penetrating orbs +1', cost: 28, rarity: 'rare', color: '#00aaff', rarityBorder: '#4466ff', weight: 7, category: 'yellow', effect: (p) => { if (!p.pierceShotCount) p.pierceShotCount = 0; p.pierceShotCount++; } },
+            { id: 'range_up', name: 'Scope Lens', desc: 'Magnet Range +50%', cost: 10, rarity: 'rare', color: '#00ffff', rarityBorder: '#4466ff', weight: 7, category: 'blue', effect: (p) => { /* Handled in Drop */ } },
+            { id: 'shield_gen', name: 'Energy Barrier', desc: 'Shield absorbs 20 damage', cost: 28, rarity: 'rare', color: '#8888ff', rarityBorder: '#4466ff', weight: 7, category: 'green', effect: (p) => { if (!p.shield) p.shield = 0; p.shield += 20; if (!p.maxShield) p.maxShield = 0; p.maxShield += 20; } },
+            { id: 'multishot', name: 'Splitter Module', desc: 'Shoot 2 extra bullets', cost: 32, rarity: 'rare', color: '#ff4488', rarityBorder: '#4466ff', weight: 7, category: 'yellow', effect: (p) => { if (!p.multiShotCount) p.multiShotCount = 1; p.multiShotCount += 1; } },
 
             // Epic (エピック) - 強力な強化
-            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 32, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.game.addDrone() },
-            { id: 'lifesteal', name: 'Vampire Fang', desc: '20% chance to heal +1 HP on hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { if (!p.lifeStealChance) p.lifeStealChance = 0.20; else p.lifeStealChance *= 1.5; } },
-            { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 44, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 4, effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
-            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 40, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 4, effect: (p) => p.missileCount++ },
+            { id: 'drone', name: 'Support Drone', desc: 'Summons a drone', cost: 32, rarity: 'epic', color: '#00ffaa', rarityBorder: '#aa00ff', weight: 4, category: 'yellow', effect: (p) => p.game.addDrone() },
+            { id: 'lifesteal', name: 'Vampire Fang', desc: '20% chance to heal +1 HP on hit', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#aa00ff', weight: 4, category: 'green', effect: (p) => { if (!p.lifeStealChance) p.lifeStealChance = 0.20; else p.lifeStealChance *= 1.5; } },
+            { id: 'time_warp', name: 'Chrono Lens', desc: 'Speed +20%, Fire Rate +15%', cost: 44, rarity: 'epic', color: '#00ccff', rarityBorder: '#aa00ff', weight: 4, category: 'blue', effect: (p) => { p.speed *= 1.2; p.shootInterval *= 0.85; } },
+            { id: 'missile', name: 'Missile Pod', desc: 'Fires homing missiles', cost: 40, rarity: 'epic', color: '#ff0088', rarityBorder: '#aa00ff', weight: 4, category: 'yellow', effect: (p) => p.missileCount++ },
 
             // Legendary (レジェンダリー) - 超強力
-            { id: 'phoenix_heart', name: 'Phoenix Heart', desc: 'Revive once on death', cost: 64, rarity: 'legendary', color: '#ffaa00', rarityBorder: '#ff8800', weight: 2, effect: (p) => { if (!p.reviveCount) p.reviveCount = 0; p.reviveCount++; } },
-            { id: 'phoenix_heart_used', name: 'Phoenix Heart (Used)', desc: 'Already consumed', cost: 0, rarity: 'legendary', color: '#666666', rarityBorder: '#444444', weight: 0, effect: (p) => { /* No effect */ } }
+            { id: 'phoenix_heart', name: 'Phoenix Heart', desc: 'Revive once on death', cost: 64, rarity: 'legendary', color: '#ffaa00', rarityBorder: '#ff8800', weight: 2, category: 'green', effect: (p) => { if (!p.reviveCount) p.reviveCount = 0; p.reviveCount++; } },
+            { id: 'phoenix_heart_used', name: 'Phoenix Heart (Used)', desc: 'Already consumed', cost: 0, rarity: 'legendary', color: '#666666', rarityBorder: '#444444', weight: 0, category: 'none', effect: (p) => { /* No effect */ } },
+            
+            // Special Effects (オレンジ - 特殊効果)
+            { id: 'volatile_core', name: 'Volatile Core', desc: 'Explosion on enemy kill', cost: 45, rarity: 'epic', color: '#ff5500', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasVolatileCore = true },
+            { id: 'soul_seekers', name: 'Soul Seekers', desc: 'Fires missiles on enemy kill', cost: 50, rarity: 'epic', color: '#ff8800', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasSoulSeekers = true },
+            { id: 'revenge_protocol', name: 'Revenge Protocol', desc: 'Counter shockwave when hit', cost: 40, rarity: 'epic', color: '#ff6600', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasRevengeProtocol = true },
+            { id: 'chain_lightning', name: 'Chain Lightning', desc: 'Attacks can chain to nearby enemies', cost: 55, rarity: 'legendary', color: '#ffee00', rarityBorder: '#ffaa00', weight: 2, category: 'orange', effect: (p) => p.hasChainLightning = true },
+            { id: 'frost_aura', name: 'Frost Aura', desc: 'Slows down nearby enemies', cost: 45, rarity: 'epic', color: '#00ccff', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasFrostAura = true },
+            { id: 'executioner', name: 'Executioner', desc: 'Double damage to low HP enemies', cost: 40, rarity: 'epic', color: '#cc0044', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasExecutioner = true },
+            { id: 'repulsion_shield', name: 'Repulsion Shield', desc: 'Knockback enemies when hit', cost: 35, rarity: 'epic', color: '#aaaaff', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasRepulsionShield = true },
+            { id: 'midas_touch', name: 'Midas Touch', desc: 'Extra Ene drop on kill', cost: 50, rarity: 'legendary', color: '#ffd700', rarityBorder: '#ffaa00', weight: 2, category: 'orange', effect: (p) => p.hasMidasTouch = true },
+            { id: 'adrenaline', name: 'Adrenaline', desc: 'Extreme speed/fire rate at low HP', cost: 40, rarity: 'epic', color: '#ff2222', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasAdrenaline = true },
+            { id: 'orbital_blades', name: 'Orbital Blades', desc: 'Spinning blades damage nearby enemies', cost: 55, rarity: 'legendary', color: '#dddddd', rarityBorder: '#ffaa00', weight: 2, category: 'orange', effect: (p) => p.game.addOrbitalBlades() },
+            { id: 'time_stop', name: 'Time Stop', desc: 'Stop time when picking up potion', cost: 50, rarity: 'legendary', color: '#aa00ff', rarityBorder: '#ffaa00', weight: 2, category: 'orange', effect: (p) => p.hasTimeStop = true },
+            { id: 'holo_decoy', name: 'Holo Decoy', desc: 'Leave a decoy when taking damage', cost: 40, rarity: 'epic', color: '#00ffff', rarityBorder: '#ffaa00', weight: 3, category: 'orange', effect: (p) => p.hasHoloDecoy = true },
+            { id: 'vampiric_aura', name: 'Vampiric Aura', desc: 'Drain HP from nearby enemies', cost: 60, rarity: 'legendary', color: '#990033', rarityBorder: '#ffaa00', weight: 2, category: 'orange', effect: (p) => p.hasVampiricAura = true }
         ];
 
         this.setupScreens();
@@ -113,6 +171,7 @@ export class UIManager {
                     <button id="btn-gacha" class="cyber-btn" style="width: 100%; border-color: #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.3);">TECH SALVAGE <span id="gacha-cost">100</span></button>
                     <p style="font-size: 10px; color: #aaa; margin-top: 5px;">Get a random item for the next run!</p>
                 </div>
+                <button id="btn-skilltree" class="cyber-btn" style="width: 100%; border-color: #00ffff; box-shadow: 0 0 10px rgba(0,255,255,0.3); margin-top: 10px;">NEURAL NETWORK (SKILL TREE)</button>
             </div>
             <div id="reserved-item-panel" style="margin-bottom: 2vh; min-height: 60px;">
                 <h3 style="font-size: 12px; color: #00ffff; margin-bottom: 5px;">RESERVED ITEM</h3>
@@ -176,7 +235,10 @@ export class UIManager {
             <h2>MISSION COMPLETE</h2>
             <div class="result-stats">
                 <p>Ene Collected: <span id="result-ene">0</span></p>
-                <p>Bonus Money: <span id="result-money">0</span></p>
+                <p>Stage Reward: <span id="result-money">0</span></p>
+                <p style="color: #ffd700; font-weight: bold;">Total Money Earned: <span id="result-run-money">0</span></p>
+                <p>Damage Dealt: <span id="result-dmg-dealt">0</span></p>
+                <p>Damage Taken: <span id="result-dmg-taken">0</span></p>
             </div>
             <div class="result-actions">
                 <button id="btn-loop" class="cyber-btn">NEXT STAGE</button>
@@ -207,6 +269,7 @@ export class UIManager {
                         <h3>Stages Cleared</h3>
                         <p class="result-big-text"><span id="victory-level">10 / 10</span></p>
                     </div>
+
                     <div class="result-section">
                         <h3>Character Used</h3>
                         <div style="display: flex; justify-content: center; align-items: center; height: 60px; width: 100%;">
@@ -220,6 +283,10 @@ export class UIManager {
                     <div class="result-section">
                         <h3>Acquired Items</h3>
                         <div id="victory-items" class="result-grid"></div>
+                    </div>
+                    <div class="result-section" style="text-align: left; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 5px; margin-top: 10px;">
+                        <p style="margin: 5px 0; font-size: 16px;">Damage Dealt: <span id="victory-dmg-dealt" style="color: #ffaa00; font-weight: bold; float: right;">0</span></p>
+                        <p style="margin: 5px 0; font-size: 16px;">Damage Taken: <span id="victory-dmg-taken" style="color: #ff4444; font-weight: bold; float: right;">0</span></p>
                     </div>
                 </div>
                 <button id="btn-victory-home" class="cyber-btn">RETURN TO HOME</button>
@@ -250,6 +317,7 @@ export class UIManager {
                             <h3>Total Ene</h3>
                             <p class="result-big-text"><span id="go-ene">0</span></p>
                         </div>
+
                     </div>
                     <div class="result-section">
                         <h3>Defeated Enemies</h3>
@@ -258,6 +326,11 @@ export class UIManager {
                     <div class="result-section">
                         <h3>Acquired Items</h3>
                         <div id="go-items" class="result-grid"></div>
+                    </div>
+                    <div class="result-section" style="text-align: left; padding: 10px 20px; background: rgba(0,0,0,0.3); border-radius: 5px; margin-top: 10px;">
+                        <p style="margin: 5px 0; font-size: 16px;">Damage Dealt: <span id="go-dmg-dealt" style="color: #ffaa00; font-weight: bold; float: right;">0</span></p>
+                        <p style="margin: 5px 0; font-size: 16px;">Damage Taken: <span id="go-dmg-taken" style="color: #ff4444; font-weight: bold; float: right;">0</span></p>
+                        <p style="margin: 5px 0; font-size: 16px;">Money Earned: <span id="go-run-money" style="color: #ffd700; font-weight: bold; float: right;">0</span></p>
                     </div>
                 </div>
                 <div style="display: flex; justify-content: center; width: 100%;">
@@ -273,6 +346,26 @@ export class UIManager {
                 <!-- Relic cards injected here -->
             </div>
             <button id="btn-close-reward" class="cyber-btn secondary">CLOSE (Cancel)</button>
+        `);
+
+        // Skill Tree Screen
+        this.screens.skilltree = this.createScreen('skilltree-screen', `
+            <div id="skilltree-canvas-container" style="position: absolute; top:0; left:0; width:100%; height:100%; overflow:hidden;"></div>
+            
+            <div style="position: absolute; top: 20px; left: 20px; z-index: 10;">
+                <h2 style="margin: 0; text-shadow: 0 0 10px #00ffff;">NEURAL NETWORK</h2>
+                <p style="margin: 5px 0; color: #00ffff;">Money: <span id="skill-money">0</span></p>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="btn-skill-back" class="cyber-btn secondary small">RETURN</button>
+                    <button id="btn-skill-reset" class="cyber-btn secondary small" style="background: rgba(255,0,0,0.2); border-color: #ff4444; color: #ff4444;">RESET TREE</button>
+                </div>
+            </div>
+
+            <div id="skill-detail-panel" style="position: absolute; bottom: 20px; right: 20px; width: 300px; background: rgba(0,0,0,0.8); border: 2px solid #00ffff; border-radius: 5px; padding: 15px; display: none; flex-direction: column; z-index: 10; box-shadow: 0 0 15px rgba(0,255,255,0.2);">
+                <h3 id="skill-detail-name" style="margin: 0 0 10px 0; font-size: 18px; border-bottom: 1px solid #333; padding-bottom: 5px;">Node Name</h3>
+                <p id="skill-detail-desc" style="margin: 0 0 15px 0; font-size: 14px; color: #ccc;">Description goes here.</p>
+                <button id="btn-skill-unlock" class="cyber-btn" style="width: 100%;">UNLOCK</button>
+            </div>
         `);
 
         // Bind Events
@@ -361,16 +454,53 @@ export class UIManager {
             }
         });
 
+        this.bindButton('btn-skilltree', () => {
+            if(this.game.skillTreeUI) this.game.skillTreeUI.refresh();
+            this.game.setState('skilltree');
+        });
+
+        this.bindButton('btn-skill-back', () => {
+            this.game.setState('home');
+        });
+
         // Back to Title from Home
         this.bindButton('btn-back-title', () => this.game.setState('title'));
 
+        const CHARACTER_PRICES = { girl: 0, cat: 1000, boy: 1000, dog: 1000 };
         const charCards = document.querySelectorAll('.char-card');
         charCards.forEach(card => {
             const handleSelect = (e) => {
                 if (e.type === 'touchstart') e.preventDefault();
-                charCards.forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                this.game.selectedCharacter = card.dataset.char;
+                
+                const charId = card.dataset.char;
+                const unlockedChars = this.game.upgradeSystem.unlockedCharacters || ['girl'];
+                
+                if (unlockedChars.includes(charId)) {
+                    // Already unlocked -> Select
+                    charCards.forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    this.game.selectedCharacter = charId;
+                } else {
+                    // Try to unlock
+                    const price = CHARACTER_PRICES[charId];
+                    if (this.game.money >= price) {
+                        this.game.money -= price;
+                        unlockedChars.push(charId);
+                        this.game.upgradeSystem.unlockedCharacters = unlockedChars;
+                        this.game.upgradeSystem.save();
+                        this.game.audio.playUpgrade();
+                        
+                        // Select it after unlocking
+                        charCards.forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                        this.game.selectedCharacter = charId;
+                        
+                        this.updateHome();
+                    } else {
+                        this.game.audio.playError();
+                        this.showMessage('Not enough Money!', 2000);
+                    }
+                }
             };
             card.addEventListener('touchstart', handleSelect, { passive: false });
             card.addEventListener('click', handleSelect);
@@ -702,7 +832,7 @@ export class UIManager {
         ctx.strokeStyle = color;
         ctx.lineWidth = 3;
 
-        if (id === 'atk_up') {
+        if (id.startsWith('atk_up')) {
             // Cyber Katana (Sword)
             ctx.beginPath();
             ctx.moveTo(cx - 10, cy + 10);
@@ -719,7 +849,7 @@ export class UIManager {
             ctx.moveTo(cx - 8, cy + 8);
             ctx.lineTo(cx - 12, cy + 12);
             ctx.stroke();
-        } else if (id === 'spd_up') {
+        } else if (id.startsWith('spd_up')) {
             // Neko Headphones
             ctx.beginPath();
             ctx.arc(cx, cy, 15, Math.PI, 0); // Band
@@ -738,12 +868,12 @@ export class UIManager {
             ctx.lineTo(cx + 5, cy - 25);
             ctx.lineTo(cx, cy - 15);
             ctx.fill();
-        } else if (id === 'hp_up') {
+        } else if (id.startsWith('hp_up')) {
             // Energy Drink (Can)
             ctx.fillRect(cx - 10, cy - 15, 20, 30);
             ctx.fillStyle = '#fff';
             ctx.fillRect(cx - 5, cy - 5, 10, 10); // Logo
-        } else if (id === 'rate_up') {
+        } else if (id.startsWith('rate_up')) {
             // Overclock Chip
             ctx.strokeRect(cx - 12, cy - 12, 24, 24);
             ctx.fillRect(cx - 6, cy - 6, 12, 12); // Core
@@ -806,7 +936,7 @@ export class UIManager {
                 ctx.lineTo(cx - 10 - i * 3, cy);
                 ctx.stroke();
             }
-        } else if (id === 'hp_regen') {
+        } else if (id.startsWith('hp_regen')) {
             // Nano Repair (HP回復)
             ctx.beginPath();
             ctx.arc(cx, cy, 12, 0, Math.PI * 2);
@@ -824,7 +954,7 @@ export class UIManager {
             ctx.beginPath();
             ctx.arc(cx, cy, 16, 0, Math.PI * 2);
             ctx.stroke();
-        } else if (id === 'crit_chance') {
+        } else if (id.startsWith('crit_chance')) {
             // Lucky Dice (クリティカル)
             ctx.strokeRect(cx - 10, cy - 10, 20, 20);
             ctx.fillRect(cx - 10, cy - 10, 20, 20);
@@ -843,7 +973,7 @@ export class UIManager {
             ctx.lineTo(cx + 12, cy - 8);
             ctx.lineTo(cx + 10, cy - 6);
             ctx.fill();
-        } else if (id === 'projectile_size') {
+        } else if (id.startsWith('projectile_size')) {
             // Amplifier Core (弾サイズ)
             ctx.beginPath();
             ctx.arc(cx, cy, 6, 0, Math.PI * 2);
@@ -929,7 +1059,7 @@ export class UIManager {
             ctx.moveTo(cx + 15, cy + 8);
             ctx.lineTo(cx + 12, cy + 11);
             ctx.stroke();
-        } else if (id === 'armor_plate') {
+        } else if (id.startsWith('armor_plate')) {
             // Titanium Plating (防御)
             ctx.fillRect(cx - 12, cy - 10, 24, 20);
             // Rivets
@@ -1106,6 +1236,46 @@ export class UIManager {
         document.getElementById('player-money').innerText = this.game.money;
         document.getElementById('gacha-cost').innerText = this.game.upgradeSystem.gachaCost;
 
+        // Update Characters
+        const CHARACTER_PRICES = { girl: 0, cat: 1000, boy: 1000, dog: 1000 };
+        const unlockedChars = this.game.upgradeSystem.unlockedCharacters || ['girl'];
+        const charCards = document.querySelectorAll('.char-card');
+        
+        charCards.forEach(card => {
+            const charId = card.dataset.char;
+            const isUnlocked = unlockedChars.includes(charId);
+            
+            let priceTag = card.querySelector('.char-price');
+            if (!priceTag && !isUnlocked) {
+                priceTag = document.createElement('div');
+                priceTag.className = 'char-price';
+                priceTag.style.position = 'absolute';
+                priceTag.style.bottom = '5px';
+                priceTag.style.left = '0';
+                priceTag.style.width = '100%';
+                priceTag.style.textAlign = 'center';
+                priceTag.style.fontSize = '10px';
+                priceTag.style.color = '#ff00ff';
+                priceTag.style.fontWeight = 'bold';
+                priceTag.style.textShadow = '0 0 5px #000';
+                priceTag.style.zIndex = '5';
+                priceTag.innerHTML = `🔒<br>${CHARACTER_PRICES[charId]}`;
+                card.style.position = 'relative';
+                card.appendChild(priceTag);
+            }
+
+            if (isUnlocked) {
+                card.style.filter = 'none';
+                card.style.opacity = '1.0';
+                if (priceTag) priceTag.style.display = 'none';
+            } else {
+                card.style.filter = 'grayscale(100%)';
+                card.style.opacity = '0.5';
+                card.classList.remove('selected');
+                if (priceTag) priceTag.style.display = 'block';
+            }
+        });
+
         // Update Reserved Item Preview
         const preview = document.getElementById('reserved-item-preview');
         if (preview) {
@@ -1248,8 +1418,12 @@ export class UIManager {
         }
     }
 
-    updateGameOverStats(ene, killCount, relics, mapLevel, loopCount = 0) {
+    updateGameOverStats(ene, killCount, relics, mapLevel, loopCount = 0, runMoney = 0) {
         document.getElementById('go-ene').innerText = ene;
+
+        // Update Money Earned
+        const goRunMoney = document.getElementById('go-run-money');
+        if (goRunMoney) goRunMoney.innerText = runMoney;
 
         // Update Difficulty Display
         const diffText = this.game.selectedDifficulty.toUpperCase();

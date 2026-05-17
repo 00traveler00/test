@@ -1,12 +1,22 @@
 export class Chest {
-    constructor(game, x, y) {
+    constructor(game, x, y, category = 'random') {
         this.game = game;
         this.x = x;
         this.y = y;
         this.radius = 20;
         this.active = true;
-        this.color = '#ffd700'; // Gold
+        this.category = category;
         this.glow = 0;
+
+        // Set color based on category
+        switch(this.category) {
+            case 'red': this.color = '#ff4444'; break;
+            case 'blue': this.color = '#4444ff'; break;
+            case 'green': this.color = '#44ff44'; break;
+            case 'yellow': this.color = '#ffff00'; break;
+            case 'orange': this.color = '#ff8800'; break;
+            default: this.color = '#ffd700'; break; // random/gold
+        }
 
         // Pre-roll rewards
         this.contents = this.generateRewards();
@@ -20,9 +30,14 @@ export class Chest {
         if (!this.game.ui || !this.game.ui.relics) return [];
 
         const selected = [];
-        const available = [...this.game.ui.relics];
+        
+        // Filter by category if one is set and it's not 'random'
+        let available = [...this.game.ui.relics].filter(r => r.category !== 'none');
+        if (this.category !== 'random') {
+            available = available.filter(r => r.category === this.category);
+        }
 
-        // Select 3 items
+        // Select up to 3 items (or less if not enough in category)
         for (let i = 0; i < 3 && available.length > 0; i++) {
             // Calculate the total weight of remaining items
             const totalWeight = available.reduce((sum, r) => sum + r.weight, 0);

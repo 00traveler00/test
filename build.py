@@ -49,7 +49,9 @@ files = [
     'js/game/ui/Minimap.js',
     'js/game/systems/UpgradeSystem.js',
     'js/game/systems/WaveManager.js',
+    'js/game/systems/SkillTree.js',
     'js/ui/UIManager.js',
+    'js/ui/SkillTreeUI.js',
     'js/game/Game.js',
     'js/game/main.js'
 ]

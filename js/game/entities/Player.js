@@ -41,15 +41,15 @@ export class Player {
             case 'boy':
                 this.speed = 180;
                 this.maxHp = 150;
-                this.shootInterval = 0.8;
-                this.damage = 20;
+                this.shootInterval = 0.7;
+                this.damage = 10;
                 this.color = '#00ff00'; // Green
                 break;
             case 'dog':
                 this.speed = 220;
                 this.maxHp = 120;
                 this.shootInterval = 0.5;
-                this.damage = 10;
+                this.damage = 7;
                 this.color = '#ff8800'; // Orange
                 break;
             default:
@@ -67,10 +67,87 @@ export class Player {
 
     update(dt) {
         this.time += dt;
+        
+        // Orange Item: Adrenaline (Calculate effective stats)
+        let effectiveSpeed = this.speed;
+        let effectiveShootInterval = this.shootInterval;
+        if (this.hasAdrenaline && (this.hp / this.maxHp) <= 0.3) {
+            effectiveSpeed *= 1.5; // 50% faster
+            effectiveShootInterval *= 0.5; // 50% faster shooting
+        }
+
         // Movement
         const input = this.game.input.getMovementVector();
-        this.x += input.x * this.speed * dt;
-        this.y += input.y * this.speed * dt;
+        this.x += input.x * effectiveSpeed * dt;
+        this.y += input.y * effectiveSpeed * dt;
+        
+        // Orange Items: Auras and Visuals
+        if (this.game.waveManager && this.game.waveManager.enemies) {
+            // Adrenaline visual (Red trail/particles)
+            if (this.hasAdrenaline && (this.hp / this.maxHp) <= 0.3) {
+                if (Math.random() < 0.2) {
+                    const p = new Particle(this.game, this.x + (Math.random()-0.5)*20, this.y + (Math.random()-0.5)*20, '#ff2222');
+                    p.size = 2;
+                    p.life = 0.5;
+                    this.game.particles.push(p);
+                }
+            }
+
+            // Frost Aura visual (Blue snowflakes)
+            if (this.hasFrostAura && Math.random() < 0.1) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * 200;
+                const p = new Particle(this.game, this.x + Math.cos(angle)*dist, this.y + Math.sin(angle)*dist, '#00ccff');
+                p.size = 3;
+                p.vx = 0; p.vy = -10; // Float up
+                p.life = 1.0;
+                this.game.particles.push(p);
+            }
+
+            // Vampiric Aura timer (tick once per 0.5s)
+            let vampiricTick = false;
+            if (this.hasVampiricAura) {
+                if (!this.vampiricAuraTimer) this.vampiricAuraTimer = 0;
+                this.vampiricAuraTimer += dt;
+                if (this.vampiricAuraTimer > 0.5) {
+                    vampiricTick = true;
+                    this.vampiricAuraTimer = 0;
+                }
+            }
+
+            this.game.waveManager.enemies.forEach(enemy => {
+                const edx = enemy.x - this.x;
+                const edy = enemy.y - this.y;
+                const edist = Math.sqrt(edx*edx + edy*edy);
+                
+                // Frost Aura (Slow)
+                if (this.hasFrostAura && edist < 200) {
+                    if (!enemy.frostAuraTimer) {
+                        enemy.originalSpeed = enemy.originalSpeed || enemy.speed; // Store original speed once
+                        enemy.speed = enemy.originalSpeed * 0.5; // Half speed
+                    }
+                    enemy.frostAuraTimer = 0.5; // Refresh duration
+                }
+
+                // Vampiric Aura (Damage and Drain)
+                if (this.hasVampiricAura && edist < 150 && vampiricTick) {
+                    enemy.takeDamage(2);
+                    this.game.showDamage(enemy.x, enemy.y, "2", '#990033');
+                    this.hp = Math.min(this.maxHp, this.hp + 0.1); // Small heal
+                    
+                    // Flashy Drain Effect
+                    const p = new Particle(this.game, enemy.x, enemy.y, '#990033');
+                    p.vx = (this.x - enemy.x) * 2;
+                    p.vy = (this.y - enemy.y) * 2;
+                    p.life = 0.5;
+                    this.game.particles.push(p);
+
+                    if (enemy.hp <= 0) {
+                        this.game.processEnemyDeath(enemy);
+                    }
+                }
+            });
+        }
 
         // Boundary checks (World Bounds)
         if (this.x < this.radius) this.x = this.radius;
@@ -80,7 +157,7 @@ export class Player {
 
         // Shooting
         this.shootTimer += dt;
-        if (this.shootTimer >= this.shootInterval) {
+        if (this.shootTimer >= effectiveShootInterval) {
             const target = this.findNearestEnemy();
             if (target) {
                 this.shoot(target);
@@ -122,6 +199,38 @@ export class Player {
                 }
             }
         }
+        
+        // Orange Item: Orbital Blades update
+        if (this.orbitalBlades && this.orbitalBlades.length > 0) {
+            const bladeRadius = 60; // Distance from player
+            const rotationSpeed = 3; // Radians per second
+            
+            this.orbitalBlades.forEach(blade => {
+                blade.angle += rotationSpeed * dt;
+                const bx = this.x + Math.cos(blade.angle) * bladeRadius;
+                const by = this.y + Math.sin(blade.angle) * bladeRadius;
+                
+                // Check collisions with enemies
+                if (this.game.waveManager && this.game.waveManager.enemies) {
+                    this.game.waveManager.enemies.forEach(enemy => {
+                        const edx = enemy.x - bx;
+                        const edy = enemy.y - by;
+                        if (edx*edx + edy*edy < (enemy.radius + 15)*(enemy.radius + 15)) { // 15 is blade radius
+                            if (!enemy.bladeHitTimer) enemy.bladeHitTimer = 0;
+                            if (this.time - enemy.bladeHitTimer > 0.2) { // 0.2s cooldown per enemy
+                                enemy.takeDamage(this.damage * 0.5); // 50% player damage
+                                this.game.showDamage(enemy.x, enemy.y, Math.round(this.damage * 0.5), '#dddddd');
+                                enemy.bladeHitTimer = this.time;
+                                
+                                if (enemy.hp <= 0) {
+                                    this.game.processEnemyDeath(enemy);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
     }
 
     shoot(target) {
@@ -137,22 +246,29 @@ export class Player {
             baseShots = [0];
         }
 
-        // Splitter Module: Add extra shots with wider angles
+        // Fire base shots
+        baseShots.forEach(angle => {
+            if (this.charType === 'cat') {
+                this.projectiles.push(new PiercingProjectile(this.game, this.x, this.y, target, angle));
+            } else if (this.charType === 'boy') {
+                // Missile already handles targeting
+                this.projectiles.push(new Missile(this.game, this.x, this.y, target));
+            } else {
+                this.projectiles.push(new Projectile(this.game, this.x, this.y, target, angle));
+            }
+        });
+
+        // Splitter Module: Add extra normal shots (Projectiles) with wider angles
         if (this.multiShotCount && this.multiShotCount > 1) {
             const extraShots = this.multiShotCount - 1;
             const angleStep = 0.15; // Spread angle between extra shots
 
             for (let i = 0; i < extraShots; i++) {
                 const angleOffset = angleStep * (i + 1);
-                baseShots.push(angleOffset);
-                baseShots.push(-angleOffset);
+                this.projectiles.push(new Projectile(this.game, this.x, this.y, target, angleOffset));
+                this.projectiles.push(new Projectile(this.game, this.x, this.y, target, -angleOffset));
             }
         }
-
-        // Fire all shots
-        baseShots.forEach(angle => {
-            this.projectiles.push(new Projectile(this.game, this.x, this.y, target, angle));
-        });
 
         // Plasma Orb: Fire piercing projectiles
         if (this.pierceShotCount && this.pierceShotCount > 0) {
@@ -188,7 +304,55 @@ export class Player {
     }
 
     draw(ctx) {
+        // Draw Auras
+        if (this.hasFrostAura) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(0, 204, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 200, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        if (this.hasVampiricAura) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(153, 0, 51, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 150, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         this.projectiles.forEach(p => p.draw(ctx));
+        
+        // Draw Orbital Blades
+        if (this.orbitalBlades && this.orbitalBlades.length > 0) {
+            const bladeRadius = 60;
+            ctx.save();
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#dddddd';
+            ctx.fillStyle = '#dddddd';
+            this.orbitalBlades.forEach(blade => {
+                const bx = this.x + Math.cos(blade.angle) * bladeRadius;
+                const by = this.y + Math.sin(blade.angle) * bladeRadius;
+                
+                ctx.save();
+                ctx.translate(bx, by);
+                ctx.rotate(blade.angle + Math.PI/2);
+                ctx.beginPath();
+                ctx.moveTo(0, -10);
+                ctx.lineTo(5, 5);
+                ctx.lineTo(-5, 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            });
+            ctx.restore();
+        }
 
         // Draw Neon Character
         ctx.save();

@@ -5,6 +5,7 @@ export class UpgradeSystem {
         this.gachaCost = 100;
         this.gachaMultiplier = 1.1;
         this.baseGachaCost = 100;
+        this.unlockedCharacters = ['girl'];
 
         this.load();
     }
@@ -36,6 +37,16 @@ export class UpgradeSystem {
 
     applyUpgrades(player) {
         // Reserved item is now handled directly in Game.startRun
+        
+        // Apply unlocked skill tree nodes
+        if (this.game.skillTree && this.game.skillTree.unlockedNodes) {
+            for (const id of this.game.skillTree.unlockedNodes) {
+                const node = this.game.skillTree.nodes[id];
+                if (node && node.effect) {
+                    node.effect(player);
+                }
+            }
+        }
     }
 
     save() {
@@ -43,7 +54,9 @@ export class UpgradeSystem {
             money: this.game.money,
             totalStagesCleared: this.game.totalStagesCleared,
             reservedRelicId: this.reservedRelicId,
-            gachaCost: this.gachaCost
+            gachaCost: this.gachaCost,
+            unlockedSkillNodes: this.game.skillTree ? this.game.skillTree.unlockedNodes : ['core'],
+            unlockedCharacters: this.unlockedCharacters
         };
         localStorage.setItem('yurufuwa_save', JSON.stringify(data));
     }
@@ -56,6 +69,12 @@ export class UpgradeSystem {
             this.game.totalStagesCleared = data.totalStagesCleared || 0;
             this.reservedRelicId = data.reservedRelicId || null;
             this.gachaCost = data.gachaCost || this.baseGachaCost;
+            if (data.unlockedSkillNodes && this.game.skillTree) {
+                this.game.skillTree.unlockedNodes = data.unlockedSkillNodes;
+            }
+            if (data.unlockedCharacters) {
+                this.unlockedCharacters = data.unlockedCharacters;
+            }
         }
     }
 }

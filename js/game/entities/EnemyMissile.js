@@ -5,10 +5,10 @@ export class EnemyMissile extends EnemyProjectile {
     constructor(game, x, y, target, damage = 8) {
         super(game, x, y, target, 'missile', damage);
         this.target = target;
-        this.speed = 250;
+        this.speed = 162.5; // Increased by 30% from 125
         this.turnSpeed = 2.5;
         this.color = '#ff0000';
-        this.lifeTime = 4.0;
+        this.lifeTime = 20.0; // 5x duration
 
         // Initial random spread
         const angle = Math.atan2(this.vy, this.vx) + (Math.random() - 0.5) * 1.0;

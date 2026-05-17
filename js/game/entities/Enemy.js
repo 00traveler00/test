@@ -21,6 +21,14 @@ export class Enemy {
     update(dt) {
         this.time += dt;
 
+        if (this.frostAuraTimer && this.frostAuraTimer > 0) {
+            this.frostAuraTimer -= dt;
+            if (this.frostAuraTimer <= 0) {
+                this.speed = this.originalSpeed || this.speed;
+                this.frostAuraTimer = 0;
+            }
+        }
+
         // Move towards player (default behavior)
         const dx = this.game.player.x - this.x;
         const dy = this.game.player.y - this.y;
@@ -371,10 +379,10 @@ export class Totem extends Enemy {
 export class KamikazeEnemy extends Enemy {
     constructor(game, x, y) {
         super(game, x, y);
-        this.speed = 180;
+        this.speed = 90; // 50% slower
         this.hp = 15;
         this.maxHp = 15;
-        this.damage = 20; // High damage
+        this.damage = 10; // 50% damage
         this.type = 'kamikaze';
         this.color = '#ffaa00'; // Orange
         this.radius = 12;

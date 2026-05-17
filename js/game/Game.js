@@ -13,6 +13,8 @@ import { Minimap } from './ui/Minimap.js';
 import { Particle } from './entities/Particle.js';
 import { Drone } from './entities/Drone.js';
 import { NextStageAltar } from './entities/NextStageAltar.js';
+import { SkillTree } from './systems/SkillTree.js';
+import { SkillTreeUI } from '../ui/SkillTreeUI.js';
 
 export class Game {
     constructor(canvas) {
@@ -57,6 +59,9 @@ export class Game {
 
         this.input = new InputHandler();
         this.ui = new UIManager(this);
+        this.skillTree = new SkillTree(this);
+        this.skillTreeUI = new SkillTreeUI(this, this.ui);
+        this.skillTreeUI.init('skilltree-canvas-container');
         this.upgradeSystem = new UpgradeSystem(this);
         this.audio = new AudioManager();
         this.minimap = null; // Created after game starts
@@ -113,6 +118,10 @@ export class Game {
             this.mapLevel = 1;
             this.ene = 0;
             this.acquiredRelics = [];
+            this.totalDamageDealt = 0;
+            this.totalDamageTaken = 0;
+            this.runMoney = 0; // Accumulated money during this run
+            this.killCount = {}; // Track kills by type
             console.log("Starting new run: Stats reset.");
         }
 
@@ -201,7 +210,6 @@ export class Game {
             console.log('DEBUG MODE ACTIVE: Super HP enabled!');
         }
 
-        this.killCount = {}; // Track kills by type
 
         this.drops = [];
         this.enemyProjectiles = [];
@@ -224,15 +232,55 @@ export class Game {
         }
 
         // Spawn Initial Chests (Scattered)
-        const chestCount = 7;
-        for (let i = 0; i < chestCount; i++) {
+        const rbg = ['red', 'blue', 'green'];
+        for (let i = rbg.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [rbg[i], rbg[j]] = [rbg[j], rbg[i]];
+        }
+        
+        let chestCategories = [
+            'yellow', 'yellow',
+            rbg[0], 
+            rbg[1], rbg[1],
+            rbg[2], rbg[2]
+        ];
+        
+        for (let i = chestCategories.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [chestCategories[i], chestCategories[j]] = [chestCategories[j], chestCategories[i]];
+        }
+
+        let spawnedChests = 0;
+        let attempts = 0;
+        while (spawnedChests < 7 && attempts < 100) {
+            attempts++;
             const x = Math.random() * (this.worldWidth - 100) + 50;
             const y = Math.random() * (this.worldHeight - 100) + 50;
-            // Simple check to avoid spawning on top of player
             const dx = x - this.player.x;
             const dy = y - this.player.y;
-            if (dx * dx + dy * dy > 40000) { // > 200px away
-                this.chests.push(new Chest(this, x, y));
+            if (dx * dx + dy * dy > 40000) {
+                const category = chestCategories[spawnedChests];
+                this.chests.push(new Chest(this, x, y, category));
+                spawnedChests++;
+            }
+        }
+
+
+
+        // Spawn Orange Chest every 2 stages
+        if (this.mapLevel % 2 === 0) {
+            let orangeSpawned = false;
+            let orangeAttempts = 0;
+            while (!orangeSpawned && orangeAttempts < 100) {
+                orangeAttempts++;
+                const x = Math.random() * (this.worldWidth - 100) + 50;
+                const y = Math.random() * (this.worldHeight - 100) + 50;
+                const dx = x - this.player.x;
+                const dy = y - this.player.y;
+                if (dx * dx + dy * dy > 40000) {
+                    this.chests.push(new Chest(this, x, y, 'orange'));
+                    orangeSpawned = true;
+                }
             }
         }
 
@@ -253,6 +301,10 @@ export class Game {
     }
 
     update(dt) {
+        if (this.state === 'skilltree') {
+            if (this.skillTreeUI) this.skillTreeUI.update(dt);
+            return;
+        }
         if (this.state === 'reward') return; // Pause for reward selection
 
         if (this.state === 'playing') {
@@ -260,7 +312,14 @@ export class Game {
                 this.player.update(dt);
                 this.updateCamera();
             }
-            if (this.waveManager) this.waveManager.update(dt);
+            
+            // Orange Item: Time Stop
+            if (this.timeStopTimer && this.timeStopTimer > 0) {
+                this.timeStopTimer -= dt;
+                // Skip waveManager and enemy updates if time is stopped
+            } else {
+                if (this.waveManager) this.waveManager.update(dt);
+            }
 
             // Update Next Stage Altar
             if (this.nextStageAltar) {
@@ -361,6 +420,7 @@ export class Game {
             if (dist < enemy.radius + this.player.radius) {
                 let dmg = enemy.damage * dt; // Scale damage by dt
                 dmg = dmg * (this.player.damageMultiplier || 1.0); // Titanium Plating effect
+                this.totalDamageTaken += dmg;
 
                 // Energy Barrier: Shield absorbs damage first
                 if (this.player.shield && this.player.shield > 0) {
@@ -375,6 +435,65 @@ export class Game {
                 // Reset shield regeneration timer on hit
                 if (this.player.shieldRegenTimer !== undefined) {
                     this.player.shieldRegenTimer = 0;
+                }
+
+                // Orange Items: On Player Hit
+                if (dmg > 0 && this.player.hp > 0) {
+                    if (this.player.hasRevengeProtocol) {
+                        this.waveManager.enemies.forEach(e => {
+                            const edx = e.x - this.player.x;
+                            const edy = e.y - this.player.y;
+                            const edist = Math.sqrt(edx*edx + edy*edy);
+                            if (edist < 150) {
+                                e.takeDamage(50);
+                                this.showDamage(e.x, e.y, "50", '#ff6600');
+                                // Lightning effect to each enemy
+                                for(let i=0; i<5; i++) {
+                                    const p = new Particle(this, this.player.x + (e.x - this.player.x)*Math.random(), this.player.y + (e.y - this.player.y)*Math.random(), '#ffaa00');
+                                    p.size = 4;
+                                    this.particles.push(p);
+                                }
+                            }
+                        });
+                        // Big Shockwave
+                        for(let i=0; i<30; i++) {
+                            const p = new Particle(this, this.player.x, this.player.y, '#ff6600');
+                            p.size = 5;
+                            p.vx *= 3;
+                            p.vy *= 3;
+                            this.particles.push(p);
+                        }
+                    }
+                    if (this.player.hasRepulsionShield) {
+                        this.waveManager.enemies.forEach(e => {
+                            const edx = e.x - this.player.x;
+                            const edy = e.y - this.player.y;
+                            const edist = Math.sqrt(edx*edx + edy*edy);
+                            if (edist < 150 && edist > 0) {
+                                e.x += (edx/edist) * 100;
+                                e.y += (edy/edist) * 100;
+                            }
+                        });
+                        // Blue Repulsion Wave
+                        for(let i=0; i<30; i++) {
+                            const p = new Particle(this, this.player.x, this.player.y, '#aaaaff');
+                            p.size = 6;
+                            p.vx *= 4;
+                            p.vy *= 4;
+                            this.particles.push(p);
+                        }
+                    }
+                    if (this.player.hasHoloDecoy) {
+                        for(let i=0; i<20; i++) {
+                            const p = new Particle(this, this.player.x, this.player.y, '#00ffff');
+                            p.size = 4;
+                            p.vx *= 0.2; // Slow fading particles
+                            p.vy *= 0.2;
+                            p.life = 2.0; // Last longer
+                            p.decay = 0.5;
+                            this.particles.push(p);
+                        }
+                    }
                 }
 
                 this.player.hp -= dmg;
@@ -399,6 +518,45 @@ export class Game {
             }
         });
 
+        // Enemies vs Obstacles
+        this.waveManager.enemies.forEach(enemy => {
+            this.obstacles.forEach(obstacle => {
+                if (obstacle.collidesWith(enemy.x, enemy.y, enemy.radius)) {
+                    // Push enemy back
+                    const dx = enemy.x - obstacle.x;
+                    const dy = enemy.y - obstacle.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0) {
+                        const overlap = (obstacle.radius + enemy.radius) - dist;
+                        enemy.x += (dx / dist) * overlap;
+                        enemy.y += (dy / dist) * overlap;
+                    }
+                }
+            });
+        });
+
+        // Player Projectiles vs Obstacles
+        this.player.projectiles.forEach(proj => {
+            if (proj.markedForDeletion) return;
+            this.obstacles.forEach(obstacle => {
+                if (proj.markedForDeletion) return;
+                if (obstacle.collidesWith(proj.x, proj.y, proj.radius)) {
+                    proj.markedForDeletion = true;
+                }
+            });
+        });
+
+        // Enemy Projectiles vs Obstacles
+        this.enemyProjectiles.forEach(proj => {
+            if (proj.markedForDeletion) return;
+            this.obstacles.forEach(obstacle => {
+                if (proj.markedForDeletion) return;
+                if (obstacle.collidesWith(proj.x, proj.y, proj.radius)) {
+                    proj.markedForDeletion = true;
+                }
+            });
+        });
+
         // Projectiles vs Enemies
         this.player.projectiles.forEach(proj => {
             this.waveManager.enemies.forEach(enemy => {
@@ -414,15 +572,27 @@ export class Game {
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (dist < enemy.radius + proj.radius) {
-                    // Check if damage is taken
-                    if (enemy.takeDamage(proj.damage)) {
-                        // Debug: Check damage before display
-                        if (isNaN(proj.damage)) {
-                            console.error("Damage is NaN before display!", { projDamage: proj.damage, isCrit: proj.isCrit });
-                            proj.damage = 1; // Fallback to 1
+                    // Orange Item: Executioner
+                    let actualDamage = proj.damage;
+                    if (this.player.hasExecutioner && (enemy.hp / enemy.maxHp) <= 0.2) {
+                        actualDamage *= 2;
+                        // Flashy Red Effect
+                        for(let i=0; i<8; i++) {
+                            const p = new Particle(this, enemy.x, enemy.y, '#cc0044');
+                            p.size = 4;
+                            this.particles.push(p);
                         }
+                    }
 
-                        let damageVal = Math.round(proj.damage);
+                    // Check if damage is taken
+                    if (enemy.takeDamage(actualDamage)) {
+                        // Debug: Check damage before display
+                        if (isNaN(actualDamage)) {
+                            actualDamage = 1; // Fallback to 1
+                        }
+                        this.totalDamageDealt += actualDamage;
+
+                        let damageVal = Math.round(actualDamage);
                         if (isNaN(damageVal)) damageVal = 1;
 
                         // Always use standard display (White, no '!')
@@ -438,6 +608,43 @@ export class Game {
                         // Spawn Particles
                         for (let i = 0; i < 5; i++) {
                             this.particles.push(new Particle(this, enemy.x, enemy.y, enemy.color));
+                        }
+                        
+                        // Orange Item: Chain Lightning
+                        if (this.player.hasChainLightning && Math.random() < 0.3 && !proj.isChainLightning) { // 30% chance, prevent infinite loops
+                            let closestEnemy = null;
+                            let closestDist = Infinity;
+                            this.waveManager.enemies.forEach(e => {
+                                if (e === enemy) return;
+                                const edx = e.x - enemy.x;
+                                const edy = e.y - enemy.y;
+                                const edist = edx*edx + edy*edy;
+                                if (edist < 40000 && edist < closestDist) { // 200px range
+                                    closestDist = edist;
+                                    closestEnemy = e;
+                                }
+                            });
+                            if (closestEnemy) {
+                                // Simulate chain lightning hit directly
+                                closestEnemy.takeDamage(actualDamage * 0.5); // 50% damage
+                                this.showDamage(closestEnemy.x, closestEnemy.y, Math.round(actualDamage * 0.5), '#ffee00');
+                                
+                                // Flashy Lightning Line
+                                const steps = 10;
+                                for (let i = 0; i <= steps; i++) {
+                                    const lx = enemy.x + (closestEnemy.x - enemy.x) * (i / steps);
+                                    const ly = enemy.y + (closestEnemy.y - enemy.y) * (i / steps);
+                                    const p = new Particle(this, lx, ly, '#ffee00');
+                                    p.size = 5;
+                                    p.vx *= 0.1;
+                                    p.vy *= 0.1;
+                                    p.life = 0.5;
+                                    this.particles.push(p);
+                                }
+                                for (let i = 0; i < 5; i++) {
+                                    this.particles.push(new Particle(this, closestEnemy.x, closestEnemy.y, '#ffffff'));
+                                }
+                            }
                         }
 
                         // Vampire Fang: Chance-based life steal on hit
@@ -460,21 +667,7 @@ export class Game {
 
                         // Vampire Fang (Old): Percentage-based lifesteal on kill (kept for compatibility)
                         if (enemy.hp <= 0) {
-                            enemy.markedForDeletion = true;
-
-                            if (this.player.lifeSteal) {
-                                const healAmount = proj.damage * this.player.lifeSteal;
-                                this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
-                                this.showDamage(this.player.x, this.player.y - 30, '+' + Math.round(healAmount), '#00ff00');
-                            }
-
-                            // Drop Scaling: Value based on Max HP (1.2倍に増加)
-                            const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10 * 1.2));
-                            this.drops.push(new Drop(this, enemy.x, enemy.y, 'energy', dropValue));
-
-                            // Track Kill
-                            if (!this.killCount[enemy.type]) this.killCount[enemy.type] = 0;
-                            this.killCount[enemy.type]++;
+                            this.processEnemyDeath(enemy, proj);
                         }
 
                         // For piercing projectiles, mark the enemy as hit instead of deleting the projectile
@@ -506,6 +699,7 @@ export class Game {
 
             if (dist < this.player.radius + proj.radius) {
                 let dmg = proj.damage * (this.player.damageMultiplier || 1.0); // Titanium Plating effect
+                this.totalDamageTaken += dmg;
 
                 // Energy Barrier: Shield absorbs damage first
                 if (this.player.shield && this.player.shield > 0) {
@@ -573,8 +767,98 @@ export class Game {
 
         this.setState('playing');
     }
+    
+    processEnemyDeath(enemy, proj = null) {
+        if (enemy.markedForDeletion) return;
+        enemy.markedForDeletion = true;
+
+        if (this.player.lifeSteal) {
+            const healAmount = (proj ? proj.damage : this.player.damage) * this.player.lifeSteal;
+            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmount);
+            this.showDamage(this.player.x, this.player.y - 30, '+' + Math.round(healAmount), '#00ff00');
+        }
+
+        // Drop Scaling: Value based on Max HP (1.2倍に増加)
+        const dropValue = Math.max(1, Math.floor(enemy.maxHp / 10 * 1.2));
+        this.drops.push(new Drop(this, enemy.x, enemy.y, 'energy', dropValue));
+        
+        // Orange Item: Midas Touch
+        if (this.player.hasMidasTouch && Math.random() < 0.1) {
+            this.drops.push(new Drop(this, enemy.x + 10, enemy.y + 10, 'energy', dropValue * 5));
+            // Flashy Gold Particles
+            for(let i=0; i<15; i++) {
+                const p = new Particle(this, enemy.x, enemy.y, '#ffd700');
+                p.size = 6;
+                p.vx *= 1.5;
+                p.vy *= 1.5;
+                this.particles.push(p);
+            }
+        }
+
+        // HP Potion drop (0.5% chance)
+        if (Math.random() < 0.005) {
+            this.drops.push(new Drop(this, enemy.x + (Math.random()-0.5)*20, enemy.y + (Math.random()-0.5)*20, 'potion', 50));
+        }
+        
+        // Orange Items: On Enemy Kill
+        if (this.player.hasVolatileCore) {
+            this.waveManager.enemies.forEach(e => {
+                if (e === enemy || e.markedForDeletion) return;
+                const edx = e.x - enemy.x;
+                const edy = e.y - enemy.y;
+                if (edx*edx + edy*edy < 10000) { // 100px radius
+                    e.takeDamage(30);
+                    this.showDamage(e.x, e.y, "30", '#ff5500');
+                    if (e.hp <= 0) this.processEnemyDeath(e);
+                }
+            });
+            // Huge Explosion Effect
+            for(let i=0; i<40; i++) {
+                const colors = ['#ff5500', '#ff0000', '#ffff00', '#ffffff'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const p = new Particle(this, enemy.x, enemy.y, color);
+                p.size = Math.random() * 5 + 3;
+                p.vx *= 2.5;
+                p.vy *= 2.5;
+                this.particles.push(p);
+            }
+        }
+        
+        if (this.player.hasSoulSeekers) {
+            const target = this.player.findNearestEnemy();
+            if (target && !target.markedForDeletion) {
+                this.player.projectiles.push(new Missile(this, enemy.x, enemy.y, target, 15));
+                this.player.projectiles.push(new Missile(this, enemy.x, enemy.y, target, 15));
+                // Flashy Missile Spawn Particles
+                for(let i=0; i<20; i++) {
+                    const p = new Particle(this, enemy.x, enemy.y, '#ff8800');
+                    p.size = 3;
+                    this.particles.push(p);
+                }
+            }
+        }
+
+        // Track Kill
+        if (!this.killCount[enemy.type]) this.killCount[enemy.type] = 0;
+        this.killCount[enemy.type]++;
+    }
+
+    addOrbitalBlades() {
+        if (!this.player) return;
+        if (!this.player.orbitalBlades) {
+            this.player.orbitalBlades = [];
+        }
+        // Add 2 blades at a time
+        this.player.orbitalBlades.push({ angle: 0 });
+        this.player.orbitalBlades.push({ angle: Math.PI });
+    }
 
     draw() {
+        if (this.state === 'skilltree') {
+            if (this.skillTreeUI) this.skillTreeUI.draw();
+            return;
+        }
+
         // Clear screen
         this.ctx.fillStyle = '#101018';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -606,6 +890,15 @@ export class Game {
             this.floatingTexts.forEach(t => t.draw(this.ctx));
 
             this.ctx.restore();
+            
+            // Orange Item: Time Stop Effect (Screen space)
+            if (this.timeStopTimer && this.timeStopTimer > 0) {
+                this.ctx.save();
+                this.ctx.globalCompositeOperation = 'screen'; // Use screen or lighter for cool effect
+                this.ctx.fillStyle = 'rgba(170, 0, 255, 0.2)'; // Semi-transparent purple
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.restore();
+            }
 
             // Show minimap only during active gameplay
             if (this.state === 'playing') {
@@ -969,6 +1262,11 @@ export class Game {
     }
 
 
+    getStageReward(stageNum) {
+        // Stage 1: 100, Stage 2: 150, Stage 3: 200, ...
+        return 100 + (stageNum - 1) * 50;
+    }
+
     nextStage() {
         // Deprecated - 互換性のために残す
         this.showStageResult();
@@ -978,10 +1276,13 @@ export class Game {
         // 台座に触れた時に呼ばれる - 結果画面のみ表示
         this.setState('result');
 
-        // Eneとボーナスマネーを表示（まだ保存しない）
-        const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
+        // ステージクリア報酬を表示（まだ保存しない）
+        const stageReward = this.getStageReward(this.mapLevel);
         document.getElementById('result-ene').innerText = this.ene;
-        document.getElementById('result-money').innerText = bonusMoney;
+        document.getElementById('result-money').innerText = stageReward;
+        document.getElementById('result-run-money').innerText = this.runMoney + stageReward;
+        document.getElementById('result-dmg-dealt').innerText = Math.round(this.totalDamageDealt || 0);
+        document.getElementById('result-dmg-taken').innerText = Math.round(this.totalDamageTaken || 0);
 
         // ボタンテキストを設定
         const btnLoop = document.getElementById('btn-loop');
@@ -1007,10 +1308,13 @@ export class Game {
         // 台座を削除
         this.nextStageAltar = null;
 
+        // ステージクリア報酬を蓄積
+        this.runMoney += this.getStageReward(this.mapLevel);
+
         // Reset Ene (Do not carry over to next stage)
         this.ene = 0;
 
-        // 次のマップへ（お金は保存しない）
+        // 次のマップへ（お金はまだ保存しない）
         this.nextMap();
     }
 
@@ -1019,15 +1323,19 @@ export class Game {
         // 台座を削除
         this.nextStageAltar = null;
 
-        // お金を保存
-        const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
-        this.money += bonusMoney;
+        // ステージクリア報酬を蓄積
+        this.runMoney += this.getStageReward(this.mapLevel);
+
+        // ランの合計お金を保存
+        this.money += this.runMoney;
         this.upgradeSystem.save();
 
         // 勝利画面を表示
         this.setState('victory');
         document.getElementById('victory-ene').innerText = this.totalEneCollected;
-        document.getElementById('victory-money').innerText = bonusMoney;
+        document.getElementById('victory-money').innerText = this.runMoney;
+        document.getElementById('victory-dmg-dealt').innerText = Math.round(this.totalDamageDealt || 0);
+        document.getElementById('victory-dmg-taken').innerText = Math.round(this.totalDamageTaken || 0);
 
         // Update Difficulty Display
         const diffText = this.selectedDifficulty.toUpperCase();
@@ -1181,13 +1489,20 @@ export class Game {
             return; // Don't actually game over
         }
 
-        // お金を保存
-        const bonusMoney = Math.floor(this.ene * 0.5) + (this.mapLevel * 100);
-        this.money += bonusMoney;
+        // ステージクリア失敗時の報酬を計算
+        const stageReward = this.getStageReward(this.mapLevel);
+        const failRate = (this.mapLevel === 1) ? 0.1 : 0.5;
+        const failReward = Math.floor(stageReward * failRate);
+        this.runMoney += failReward;
+
+        // ランの合計お金を保存
+        this.money += this.runMoney;
         this.upgradeSystem.save();
 
         this.setState('gameover');
-        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel, this.loopCount);
+        this.ui.updateGameOverStats(this.totalEneCollected, this.killCount, this.acquiredRelics, this.mapLevel, this.loopCount, this.runMoney);
+        document.getElementById('go-dmg-dealt').innerText = Math.round(this.totalDamageDealt || 0);
+        document.getElementById('go-dmg-taken').innerText = Math.round(this.totalDamageTaken || 0);
         // Reset map level on game over
         this.mapLevel = 1;
     }

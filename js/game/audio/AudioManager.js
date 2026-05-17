@@ -131,6 +131,14 @@ export class AudioManager {
 
     playBossSummon() { this._playOneShot('sawtooth', 100, 0.2, 1.0, 0.01, 50); }
 
+    playUpgrade() {
+        this.playLevelUp(); // 再利用するか、新しい音を設定
+    }
+
+    playError() {
+        this._playOneShot('sawtooth', 150, 0.1, 0.2, 0.01, 100);
+    }
+
     // Helper for one‑shot effects – optional endFreq for pitch slide
     _playOneShot(type, startFreq, startGain, duration, endGain, endFreq) {
         if (!this.enabled || !this.initialized) return;
